@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agricultural Plots for Sale</title>
+  <meta name="description" content="Family-owned agricultural plots for sale — sizes, prices, and contact details." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">Family Agricultural Plots</h1>
+      <p class="site-subtitle">Reliable land in peaceful locations — direct from family owners.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h2>Available Plots</h2>
+      <p>Browse our current listings. Click any plot for details and contact info.</p>
+    </section>
+
+    <section id="filters" class="filters">
+      <!-- Filter and sort controls will be rendered here by scripts.js -->
+    </section>
+    <section id="listings" class="listings" aria-live="polite">
+      <!-- Listings are rendered here by scripts.js -->
+      <noscript>
+        <p><strong>JavaScript is disabled.</strong> Please enable JavaScript to view current listings or open the file <code>listings.json</code>.</p>
+      </noscript>
+    </section>
+
+    <section class="contact">
+      <h2>Contact</h2>
+      <p>Interested in a plot? Email us at <a id="contactEmail" href="mailto:contact@example.com">contact@example.com</a> or call <a id="contactPhone" href="tel:+1234567890">+1 (234) 567-890</a>.</p>
+      <p>We can arrange visits and provide maps and documents on request.</p>
+    </section>
+  </main>
+
+  <!-- Modal for details -->
+  <div id="modal" class="modal" role="dialog" aria-hidden="true" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <button id="modalClose" class="modal-close" aria-label="Close details">×</button>
+      <h3 id="modalTitle"></h3>
+      <img id="modalImage" src="" alt="" />
+      <p id="modalDesc"></p>
+      <ul id="modalDetails" class="details-list"></ul>
+  <!-- Removed old modal contact line; contact info now shown in details list with icons and tooltips -->
+      <p><a id="modalMap" href="#" target="_blank" rel="noopener">View on Google Maps</a></p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>&copy; <span id="year"></span> Family Agricultural Plots. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="scripts.js"></script>
+</body>
+</html>
