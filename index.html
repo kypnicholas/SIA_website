@@ -11,31 +11,42 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="wrap">
+    <div class="header-inner">
       <h1 class="site-title">Family Agricultural Plots</h1>
-      <p class="site-subtitle">Reliable land in peaceful locations — direct from family owners.</p>
+      <h2 class="site-subheader">A Family’s Legacy — Your Next Opportunity</h2>
+      <p class="site-subheader-desc">
+        Welcome to our family-owned land across Cyprus — fertile, sun-soaked properties cared for through generations and ready for new possibilities.<br>
+        With excellent road access and locations between major cities, each plot offers unique potential for agriculture, solar energy, or strategic development.<br>
+        From olive-tree groves to open fields, these lands capture the island’s natural richness and investment promise — rooted in tradition, yet ready for the future.
+      </p>
+      <!-- <p class="site-subtitle">Reliable land in peaceful locations — direct from family owners.</p>-->
     </div>
   </header>
 
-  <main class="wrap">
+  <main>
     <section class="hero">
-      <h2>Available Plots</h2>
-      <p>Browse our current listings. Click any plot for details and contact info.</p>
+      <!--
+      <h2>A Family’s Legacy — Your Next Opportunity</h2>
+      <p>Welcome to our family-owned land across Cyprus — fertile, sun-soaked properties cared for through generations and ready for new possibilities. <br>With excellent road access and locations between major cities, each plot offers unique potential for agriculture, solar energy, or strategic development. <br>From olive-tree groves to open fields, these lands capture the island’s natural richness and investment promise — rooted in tradition, yet ready for the future.</p>
     </section>
-    <button id="filtersToggleBtn" class="filters-toggle-btn accordion-header" aria-expanded="false" aria-controls="filters">
-      <span class="accordion-label">Show Filters</span>
-      <span class="accordion-chevron" aria-hidden="true">&#9662;</span>
-    </button>
+  -->
 
-    <section id="filters" class="filters">
-      <!-- Filter and sort controls will be rendered here by scripts.js -->
-    </section>
-    <section id="listings" class="listings" aria-live="polite">
-      <!-- Listings are rendered here by scripts.js -->
-      <noscript>
-        <p><strong>JavaScript is disabled.</strong> Please enable JavaScript to view current listings or open the file <code>listings.json</code>.</p>
-      </noscript>
-    </section>
+    <div class="listings-container">
+      <button id="filtersToggleBtn" class="filters-toggle-btn accordion-header" aria-expanded="false" aria-controls="filters">
+        <span class="accordion-label">Show Filters</span>
+        <span class="accordion-chevron" aria-hidden="true">&#9662;</span>
+      </button>
+
+      <section id="filters" class="filters">
+        <!-- Filter and sort controls will be rendered here by scripts.js -->
+      </section>
+      <section id="listings" class="listings" aria-live="polite">
+        <!-- Listings are rendered here by scripts.js -->
+        <noscript>
+          <p><strong>JavaScript is disabled.</strong> Please enable JavaScript to view current listings or open the file <code>listings.json</code>.</p>
+        </noscript>
+      </section>
+    </div>
 
     <section class="contact">
       <h2>Contact</h2>
@@ -63,7 +74,7 @@
   </div>
 
   <footer class="site-footer">
-    <div class="wrap">
+    <div>
       <p>&copy; <span id="year"></span> Family Agricultural Plots. All rights reserved.</p>
     </div>
   </footer>
