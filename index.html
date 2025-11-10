@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Custom favicon -->
+  <link rel="icon" type="image/png" href="favicon_olivetree.png" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Agricultural Plots for Sale</title>
   <meta name="description" content="Family-owned agricultural plots for sale — sizes, prices, and contact details." />
@@ -20,6 +22,10 @@
       <h2>Available Plots</h2>
       <p>Browse our current listings. Click any plot for details and contact info.</p>
     </section>
+    <button id="filtersToggleBtn" class="filters-toggle-btn accordion-header" aria-expanded="false" aria-controls="filters">
+      <span class="accordion-label">Show Filters</span>
+      <span class="accordion-chevron" aria-hidden="true">&#9662;</span>
+    </button>
 
     <section id="filters" class="filters">
       <!-- Filter and sort controls will be rendered here by scripts.js -->

@@ -1,3 +1,26 @@
+// Accordion-style filters logic
+document.addEventListener('DOMContentLoaded', function() {
+  const filters = document.getElementById('filters');
+  const toggleBtn = document.getElementById('filtersToggleBtn');
+  if (filters && toggleBtn) {
+    const label = toggleBtn.querySelector('.accordion-label');
+    function setExpanded(expanded) {
+      if (expanded) {
+        filters.classList.add('expanded');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        if (label) label.textContent = 'Hide Filters';
+      } else {
+        filters.classList.remove('expanded');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        if (label) label.textContent = 'Show Filters';
+      }
+    }
+    setExpanded(false);
+    toggleBtn.addEventListener('click', function() {
+      setExpanded(!filters.classList.contains('expanded'));
+    });
+  }
+});
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
 const modal = document.getElementById('modal');
