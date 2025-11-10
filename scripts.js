@@ -126,7 +126,6 @@ function renderFilters(data) {
       });
     }
   }, 0);
-  // ...existing code...
   // Attach event listener to location dropdown after rendering
   setTimeout(() => {
     const locationSelect = document.getElementById('filterLocation');
@@ -150,7 +149,6 @@ function renderFilters(data) {
       });
     }
   }, 0);
-  // ...existing code...
   // Dual-handle logic for area
   // (removed duplicate/early declarations; all slider variables are declared after DOM update below)
   // (removed duplicate/early declarations; all slider variables are declared after DOM update below)
@@ -421,9 +419,6 @@ function renderListings(data){
     const btn = card.querySelector('button');
     btn.addEventListener('click', () => openModal(item));
   });
-
-
-// (No-op: removed legacy renderFilters and applyFilters)
 }
 
 function openModal(item){
@@ -444,10 +439,29 @@ function openModal(item){
     <li><span class="icon-attr" title="Telephone">${svgPhone()}</span> <a href="tel:${escapeHtml(item.contactPhone || '')}">${escapeHtml(item.contactPhone || '—')}</a></li>
     <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || 'contact@example.com')}">${escapeHtml(item.contactEmail || '—')}</a></li>
   `;
-// SVG for phone icon
-function svgPhone() {
-  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
-}
+  // Attach PDF export event listener (ensure button exists)
+  const pdfBtn = document.getElementById('downloadPdfBtn');
+  const modalEl = document.querySelector('.modal-content');
+  if (pdfBtn && modalEl && window.html2pdf) {
+    pdfBtn.onclick = function() {
+      const closeBtn = document.getElementById('modalClose');
+      pdfBtn.style.display = 'none';
+      if (closeBtn) closeBtn.style.display = 'none';
+      html2pdf().set({
+        margin: 0.5,
+        filename: (modalTitle.textContent || 'listing') + '.pdf',
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      }).from(modalEl).save().then(() => {
+        pdfBtn.style.display = '';
+        if (closeBtn) closeBtn.style.display = '';
+      });
+    };
+  }
+  // SVG for phone icon
+  function svgPhone() {
+    return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
+  }
   // Remove old contact line: modalEmail, modalPhone are no longer used in the modal body
   if(item.latitude && item.longitude){
     modalMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}`;
@@ -465,7 +479,9 @@ function closeModal(){
   modal.setAttribute('aria-hidden', 'true');
 }
 
-modalClose.addEventListener('click', closeModal);
+if (modalClose) {
+  modalClose.addEventListener('click', closeModal);
+}
 modal.addEventListener('click', (e) => {
   if(e.target === modal) closeModal();
 });
@@ -486,3 +502,4 @@ function escapeHtml(str){
 function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
 loadListings();
+
