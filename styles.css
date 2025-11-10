@@ -1,3 +1,40 @@
+.card-status-sticker {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fffbe7;
+  color: #2b7a2b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2.5px 8px 2.5px 8px;
+  border-radius: 0 9px 9px 9px;
+  border-top-right-radius: 13px 9px;
+  border-bottom-right-radius: 9px 13px;
+  border-bottom-left-radius: 9px 9px;
+  box-shadow: 0 1.2px 4px rgba(44,122,44,0.08), 2px 2px 0 0 #e6dca8 inset;
+  z-index: 2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: box-shadow 0.18s, background 0.18s, color 0.18s;
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%);
+}
+.card-status-sticker::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  background: #e6dca8;
+  transform: rotate(45deg) translate(35%, 35%);
+  border-bottom-right-radius: 2px;
+  z-index: 3;
+  pointer-events: none;
+}
+.card {
+  position: relative;
+}
 .listings-container {
   width: 100%;
   margin: 0;
