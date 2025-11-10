@@ -211,6 +211,23 @@ function renderFilters(data) {
 
   filtersEl.innerHTML = `
     <form id="filterForm" class="filter-form">
+      <div class="sort-group">
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+          <option value="">Default</option>
+          <option value="size-asc">Area (min first)</option>
+          <option value="size-desc">Area (max first)</option>
+          <option value="price-asc">Price (min first)</option>
+          <option value="price-desc">Price (max first)</option>
+        </select>
+      </div>
+      <label>
+        Location:
+        <select id="filterLocation">
+          <option value="">All</option>
+          ${locations.map(loc => `<option value="${escapeHtml(loc)}">${escapeHtml(loc)}</option>`).join('')}
+        </select>
+      </label>
       <div class="area-dropdown-group">
         <label for="areaDropdownBtn" class="filter-label">Area (m²)</label>
         <button type="button" id="areaDropdownBtn" class="area-dropdown-btn">
@@ -246,23 +263,6 @@ function renderFilters(data) {
           </div>
           <button type="button" id="priceApplyBtn" class="price-apply-btn">Apply</button>
         </div>
-      </div>
-      <label>
-        Location:
-        <select id="filterLocation">
-          <option value="">All</option>
-          ${locations.map(loc => `<option value="${escapeHtml(loc)}">${escapeHtml(loc)}</option>`).join('')}
-        </select>
-      </label>
-      <div class="sort-group">
-        <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect">
-          <option value="">Default</option>
-          <option value="size-asc">Area (min first)</option>
-          <option value="size-desc">Area (max first)</option>
-          <option value="price-asc">Price (min first)</option>
-          <option value="price-desc">Price (max first)</option>
-        </select>
       </div>
       <button type="reset">Reset all</button>
     </form>
