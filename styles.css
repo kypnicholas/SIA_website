@@ -1,3 +1,25 @@
+/* Custom header image background */
+.site-header {
+  background: url('header-bg.png') center center/cover no-repeat;
+  color: #fff;
+}
+/* Print-friendly modal PDF content */
+#modalPdfContent {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 600px;
+  background: #fff;
+  color: #222;
+  padding: 0;
+  margin: 0;
+  font-size: 1rem;
+  z-index: -1;
+}
+/* Hide elements with .no-print in print/PDF */
+@media print {
+  .no-print { display: none !important; }
+}
 /* Modal header row for title and PDF icon */
 .modal-header-row {
   display: flex;
@@ -429,20 +451,21 @@ body{
 }
 
 .site-header{
-  background:
-    linear-gradient(to bottom, rgba(34, 87, 34, 0.92) 60%, rgba(34, 87, 34, 0.7) 80%, rgba(34,87,34,0) 100%),
-    url('data:image/svg+xml;utf8,<svg width="1200" height="180" viewBox="0 0 1200 180" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 120 Q 200 160 400 120 T 800 120 T 1200 140 V180 H0Z" fill="%234a7c4a"/><path d="M0 140 Q 300 180 600 140 T 1200 160 V180 H0Z" fill="%235ea05e"/><path d="M0 160 Q 400 200 800 160 T 1200 180 V180 H0Z" fill="%2382c882"/></svg>') repeat-x bottom/cover;
-  background-color: #225722;
-  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  color:white;
-  padding:28px 0 44px 0;
-  color:white;
-  padding:28px 0;
+  background: url('header-bg.png') center center/cover no-repeat;
+  color: white;
+  padding: 28px 0 44px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.site-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 60%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, #fff 100%);
+  z-index: 2;
 }
 .site-title{margin:0;font-size:1.6rem}
 .site-subtitle{margin:6px 0 0;opacity:0.95;font-size:0.95rem}

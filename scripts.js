@@ -422,6 +422,51 @@ function renderListings(data){
 }
 
 function openModal(item){
+  // PDF export: dynamically create a visible print-friendly container
+  function buildPdfContent() {
+    // Inline SVG icon functions for PDF context
+    function svgArea() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+    }
+    function svgPrice() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="10" cy="10" r="8" stroke="#2b7a2b" stroke-width="2" fill="none"/><text x="10" y="14" text-anchor="middle" font-size="10" fill="#2b7a2b" font-family="Arial">€</text></svg>`;
+    }
+    function svgLocation() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+    }
+    function svgNotes() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="4" y="3" width="12" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M7 7h6M7 10h6M7 13h4" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+    }
+    function svgPhone() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
+    }
+    function svgContact() {
+      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 5l7 6 7-6" stroke="#2b7a2b" stroke-width="1.5" fill="none"/></svg>`;
+    }
+    const div = document.createElement('div');
+    div.style.background = '#fff';
+    div.style.color = '#222';
+    div.style.fontSize = '1rem';
+    div.style.width = '600px';
+    div.style.margin = '0 auto';
+    div.style.padding = '0';
+    div.innerHTML = `
+      <h3 style="margin-top:0">${escapeHtml(item.title || '—')}</h3>
+      <img src="${escapeAttr(item.image || '')}" alt="${escapeAttr(item.imageAlt || item.title || '')}" style="width:100%;max-width:420px;display:block;margin:12px 0;" />
+      <p style="margin:12px 0;">${escapeHtml(item.description || '—')}</p>
+      <ul style="list-style:none;padding:0;margin:0 0 12px 0;">
+        <li><span>${svgArea()}</span> ${escapeHtml(item.size || '—')}</li>
+        <li><span>${svgPrice()}</span> ${escapeHtml(item.price || '—')}</li>
+        <li><span>${svgLocation()}</span> ${escapeHtml(item.location || '—')}</li>
+        <li><span>${svgNotes()}</span> ${escapeHtml(item.notes || '—')}</li>
+        <li><span>${svgPhone()}</span> ${escapeHtml(item.contactPhone || '—')}</li>
+        <li><span>${svgContact()}</span> ${escapeHtml(item.contactEmail || '—')}</li>
+      </ul>
+      ${(item.latitude && item.longitude) ? `<div style='margin:8px 0 0 0;'><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.latitude || '') + ',' + (item.longitude || ''))}" target="_blank">View on Google Maps</a></div>` : ''}
+    `;
+    document.body.appendChild(div);
+    return div;
+  }
   // Add SVG icon for contact info in modal
   const modalContactIcon = document.getElementById('modalContactIcon');
   if (modalContactIcon) {
@@ -441,20 +486,37 @@ function openModal(item){
   `;
   // Attach PDF export event listener (ensure button exists)
   const pdfBtn = document.getElementById('downloadPdfBtn');
-  const modalEl = document.querySelector('.modal-content');
-  if (pdfBtn && modalEl && window.html2pdf) {
-    pdfBtn.onclick = function() {
-      const closeBtn = document.getElementById('modalClose');
-      pdfBtn.style.display = 'none';
-      if (closeBtn) closeBtn.style.display = 'none';
-      html2pdf().set({
-        margin: 0.5,
-        filename: (modalTitle.textContent || 'listing') + '.pdf',
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      }).from(modalEl).save().then(() => {
-        pdfBtn.style.display = '';
-        if (closeBtn) closeBtn.style.display = '';
+  if (pdfBtn && window.html2canvas && window.jspdf) {
+    // Remove any previous click handler
+    pdfBtn.replaceWith(pdfBtn.cloneNode(true));
+    const newPdfBtn = document.getElementById('downloadPdfBtn');
+    newPdfBtn.onclick = async function() {
+      newPdfBtn.style.display = 'none';
+      // Wait a tick to ensure button is hidden
+      await new Promise(r => setTimeout(r, 100));
+      const modalContent = document.querySelector('.modal-content');
+      if (!modalContent) return;
+      html2canvas(modalContent, { scale: 2, useCORS: true }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+        // Calculate image size to fit A4
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        let imgWidth = canvas.width;
+        let imgHeight = canvas.height;
+        // Scale to fit width
+        if (imgWidth > pageWidth) {
+          imgHeight = imgHeight * (pageWidth / imgWidth);
+          imgWidth = pageWidth;
+        }
+        // If still too tall, scale to fit height
+        if (imgHeight > pageHeight) {
+          imgWidth = imgWidth * (pageHeight / imgHeight);
+          imgHeight = pageHeight;
+        }
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save((modalTitle.textContent || 'listing') + '.pdf');
+        newPdfBtn.style.display = '';
       });
     };
   }
