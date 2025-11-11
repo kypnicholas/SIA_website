@@ -1,3 +1,12 @@
+/* Ensure .site-subheader and site-header .site-subheader-desc appears above the header overlay */
+.site-header .site-subheader {
+  position: relative;
+  z-index: 3;
+}
+.site-header .site-subheader-desc {
+  position: relative;
+  z-index: 3;
+}
 .card-status-sticker {
   position: absolute;
   top: 10px;
@@ -561,7 +570,7 @@ body{
 
 .site-header{
   background: url('test.png') center center/cover no-repeat;
-  color: white;
+  color: #fff;
   padding-top: 56px;
   padding-bottom: 88px;
   position: relative;
@@ -572,26 +581,29 @@ body{
   content: '';
   position: absolute;
   left: 0; right: 0; top: 0; bottom: 0;
-  background: rgba(30,40,30,0.22);
+  background: rgba(20, 28, 20, 0.48); /* darker and more opaque overlay */
   z-index: 1;
   pointer-events: none;
 }
+
+/* White gradient/ blending in header */
 
 .site-header::after {
   content: '';
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  height: 60%;
+  height: 30%;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, #fff 100%);
+  background: linear-gradient(to bottom, rgba(248,248,248,0) 0%, rgb(248, 248, 248) 100%);
   z-index: 2;
 }
+
 .site-title {
   margin: 0;
   font-size: 2.1rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #fff;
+  color: #fff !important;
   text-shadow: 0 2px 12px rgba(0,0,0,0.28), 0 1px 0 #2228;
   padding: 0.2em 0.5em;
   border-radius: 6px;
@@ -604,7 +616,7 @@ body{
   opacity: 0.98;
   font-size: 1.08rem;
   font-weight: 500;
-  color: #f8f8f8;
+  color: #fff !important;
   background: rgba(34, 34, 34, 0.38);
   text-shadow: 0 1px 8px rgba(0,0,0,0.22);
   padding: 0.25em 0.9em;
@@ -612,6 +624,16 @@ body{
   display: inline-block;
   position: relative;
   z-index: 3;
+}
+
+/* Make all header text white for readability */
+.site-header p,
+.site-header .subtitle,
+.site-header .site-subtitle,
+.site-header .site-subheader-desc 
+{
+  color: #fff !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.22);
 }
 
 .hero{
