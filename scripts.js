@@ -61,21 +61,32 @@ function renderFilters(data) {
   // All DOM-dependent logic must come after filtersEl.innerHTML
   setTimeout(() => {
     // Helper to update area button placeholder
-    function updateAreaBtnPlaceholder() {
+    function updateAreaBtnPlaceholder(forceDefault = false) {
       const areaBtn = document.getElementById('areaDropdownBtn');
       const areaMinInput = document.getElementById('filterAreaMinInput');
       const areaMaxInput = document.getElementById('filterAreaMaxInput');
-      const min = parseInt(areaMinInput.value);
-      const max = parseInt(areaMaxInput.value);
+      let min = parseInt(areaMinInput.value);
+      let max = parseInt(areaMaxInput.value);
+      if (forceDefault) {
+        min = areaMin;
+        max = areaMax;
+        areaMinInput.value = areaMin;
+        areaMaxInput.value = areaMax;
+      }
       areaBtn.innerHTML = `${min === areaMin && max === areaMax ? `${areaMin}–${areaMax} m²` : `${min}–${max} m²`} <span class="area-caret">▼</span>`;
     }
-    // Helper to update price button placeholder
-    function updatePriceBtnPlaceholder() {
+    function updatePriceBtnPlaceholder(forceDefault = false) {
       const priceBtn = document.getElementById('priceDropdownBtn');
       const priceMinInput = document.getElementById('filterPriceMinInput');
       const priceMaxInput = document.getElementById('filterPriceMaxInput');
-      const min = parseInt(priceMinInput.value);
-      const max = parseInt(priceMaxInput.value);
+      let min = parseInt(priceMinInput.value);
+      let max = parseInt(priceMaxInput.value);
+      if (forceDefault) {
+        min = priceMin;
+        max = priceMax;
+        priceMinInput.value = priceMin;
+        priceMaxInput.value = priceMax;
+      }
       priceBtn.innerHTML = `${min === priceMin && max === priceMax ? `€${priceMin}–€${priceMax}` : `€${min}–€${max}`} <span class="price-caret">▼</span>`;
     }
 
@@ -323,21 +334,9 @@ function renderFilters(data) {
   if (form) {
     form.addEventListener('reset', (e) => {
       setTimeout(() => {
-        // Reset area and price inputs to min/max
-        if (areaMinInput) areaMinInput.value = areaMin;
-        if (areaMaxInput) areaMaxInput.value = areaMax;
-        if (priceMinInput) priceMinInput.value = priceMin;
-        if (priceMaxInput) priceMaxInput.value = priceMax;
-        // Reset location and sort
-        const locationSelect = document.getElementById('filterLocation');
-        if (locationSelect) locationSelect.value = '';
-        const sortSelect = document.getElementById('sortSelect');
-        if (sortSelect) sortSelect.value = '';
-        // Update popover button placeholders
-        if (typeof updateAreaBtnPlaceholder === 'function') updateAreaBtnPlaceholder();
-        if (typeof updatePriceBtnPlaceholder === 'function') updatePriceBtnPlaceholder();
-        // Reset filters object
+        // Reset filters object and force full filter UI re-render
         filters = {};
+        renderFilters(allListings);
         renderListings(allListings);
       }, 0);
     });
@@ -411,9 +410,26 @@ async function loadListings(){
 
 function renderListings(data){
   if(!Array.isArray(data) || data.length === 0){
-    listingsEl.innerHTML = '<p>No listings available right now.</p>';
+    listingsEl.innerHTML = `
+      <div class="empty-listings-message">
+        <span class="empty-icon">${svgEmptyState()}</span>
+        <span>No listings available. <br>Please redefine your search criteria.</span>
+      </div>
+    `;
     return;
   }
+
+// Professional empty state SVG icon
+function svgEmptyState() {
+  return `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="12" width="32" height="28" rx="4" fill="#f4faf4" stroke="#b2dcb2" stroke-width="2"/>
+    <rect x="14" y="18" width="20" height="4" rx="2" fill="#b2dcb2"/>
+    <rect x="14" y="26" width="12" height="3" rx="1.5" fill="#dbeedd"/>
+    <rect x="14" y="32" width="16" height="3" rx="1.5" fill="#dbeedd"/>
+    <rect x="12" y="8" width="24" height="6" rx="3" fill="#b2dcb2"/>
+    <circle cx="38" cy="16" r="2" fill="#b2dcb2"/>
+  </svg>`;
+}
   listingsEl.innerHTML = '';
   data.forEach(item => {
     const card = document.createElement('article');
