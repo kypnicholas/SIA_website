@@ -514,7 +514,7 @@ function openModal(item){
         <li><span>${svgPhone()}</span> ${escapeHtml(item.contactPhone || '—')}</li>
         <li><span>${svgContact()}</span> ${escapeHtml(item.contactEmail || '—')}</li>
       </ul>
-      ${(item.latitude && item.longitude) ? `<div style='margin:8px 0 0 0;'><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.latitude || '') + ',' + (item.longitude || ''))}" target="_blank">View on Google Maps</a></div>` : ''}
+  ${(item.latitude && item.longitude) ? `<div style='margin:8px 0 0 0;'><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.latitude || '') + ',' + (item.longitude || ''))}" target="_blank" title="View on Google Maps" style="display:inline-block;vertical-align:middle;"><img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" style="width:28px;height:28px;border:none;vertical-align:middle;" /></a></div>` : ''}
     `;
     document.body.appendChild(div);
     return div;
@@ -579,8 +579,9 @@ function openModal(item){
   }
   // Remove old contact line: modalEmail, modalPhone are no longer used in the modal body
   if(item.latitude && item.longitude){
-    modalMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}`;
-    modalMap.style.display = 'inline';
+  modalMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}`;
+  modalMap.innerHTML = `<img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" style="width:28px;height:28px;border:none;vertical-align:middle;" />`;
+  modalMap.style.display = 'inline-block';
   } else {
     modalMap.style.display = 'none';
   }
