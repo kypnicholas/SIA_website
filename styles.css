@@ -697,21 +697,76 @@ body{
   border:1px solid #ddd;
 }
 
-.contact{
-  background:var(--card-bg);
-  padding:16px;
-  border-radius:8px;
-  box-shadow:var(--shadow);
-  margin-bottom:36px;
+.contact {
+  background: #f8fdf8;
+  border: 1.5px solid #e0efe0;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(44,122,44,0.04);
+  padding: 20px 36px 20px 36px;
+  margin: 4px auto 4px auto;
+  max-width: 800px;
+  color: #2b7a2b;
+  font-size: 1.13rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.contact h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.45em;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #225722;
+}
+.contact h2::before {
+  content: '';
+  display: inline-block;
+  width: 1.3em;
+  height: 1.3em;
+  margin-right: 4px;
+  background: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="24" height="16" rx="3" stroke="%232b7a2b" stroke-width="2" fill="%23f8fdf8"/><path d="M4 8l12 10 12-10" stroke="%232b7a2b" stroke-width="1.5" fill="none"/></svg>') no-repeat center/contain;
+  vertical-align: middle;
+}
+.contact a {
+  color: #2b7a2b;
+  text-decoration: underline dotted;
+  transition: color 0.18s;
+}
+.contact a:hover, .contact a:focus {
+  color: #225722;
+  text-decoration: underline solid;
+}
+.contact p {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
 }
 
 .site-footer{
-  padding-top: 18px;
-  padding-bottom: 18px;
-  background:transparent;
-  color:var(--muted);
-  text-align:center;
+  padding-top: 22px;
+  padding-bottom: 22px;
+  background: var(--accent);
+  color: #fff;
+  text-align: left;
+  font-size: 1.08rem;
+  letter-spacing: 0.01em;
+  border-top: 1.5px solid #236423;
+  box-shadow: 0 -2px 12px rgba(44,122,44,0.06);
+  margin-top: 0px;
+  padding-left: 36px;
 }
+.site-footer a {
+  color: #fff;
+  text-decoration: underline dotted;
+  transition: color 0.18s;
+}
+.site-footer a:hover, .site-footer a:focus {
+  color: #e0ffe0;
+  text-decoration: underline solid;
+}
+
 
 /* Modal */
 .modal{
