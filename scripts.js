@@ -447,11 +447,9 @@ function svgEmptyState() {
           <span class="icon-attr">${svgLocation()}</span> <span>${escapeHtml(item.location)}</span>
         </div>
         <div class="card-desc">${escapeHtml(item.shortDescription)}</div>
-        <div class="card-actions">
+        <div class="card-actions" style="display:flex;align-items:center;justify-content:space-between;">
           <button class="button" data-id="${escapeAttr(item.id)}">View details</button>
-          <a class="secondary" href="mailto:${encodeURIComponent(item.contactEmail || 'contact@example.com')}">
-            <span class="icon-attr">${svgContact()}</span> Email
-          </a>
+          ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" title="View on Google Maps" style="margin-left:auto;display:inline-block;text-decoration:none;vertical-align:middle;"><span style="font-size:1.7em;">📌</span></a>` : ''}
         </div>
       </div>
     `;
@@ -514,7 +512,7 @@ function openModal(item){
         <li><span>${svgPhone()}</span> ${escapeHtml(item.contactPhone || '—')}</li>
         <li><span>${svgContact()}</span> ${escapeHtml(item.contactEmail || '—')}</li>
       </ul>
-  ${(item.latitude && item.longitude) ? `<div style='margin:8px 0 0 0;'><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.latitude || '') + ',' + (item.longitude || ''))}" target="_blank" title="View on Google Maps" style="display:inline-block;vertical-align:middle;"><img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" style="width:28px;height:28px;border:none;vertical-align:middle;" /></a></div>` : ''}
+  
     `;
     document.body.appendChild(div);
     return div;
@@ -577,14 +575,21 @@ function openModal(item){
   function svgPhone() {
     return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
   }
-  // Remove old contact line: modalEmail, modalPhone are no longer used in the modal body
+
+  /*
+  // Update modalMap link if coordinates are available
   if(item.latitude && item.longitude){
   modalMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}`;
-  modalMap.innerHTML = `<img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" style="width:28px;height:28px;border:none;vertical-align:middle;" />`;
+  modalMap.innerHTML = `<span style="font-size:28px;">📌</span>`;
+  modalMap.style.textDecoration = 'none';
   modalMap.style.display = 'inline-block';
   } else {
     modalMap.style.display = 'none';
   }
+  */
+
+  // Always hide modalMap (Google Maps pin/link) in the modal
+  modalMap.style.display = 'none';
 
   modal.setAttribute('aria-hidden', 'false');
   // trap focus briefly (basic)
