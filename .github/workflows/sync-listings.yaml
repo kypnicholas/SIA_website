@@ -1,0 +1,58 @@
+# Sync listings.json from published Google Apps Script web app
+# - Expects a repository secret named SHEET_JSON_URL with the Web App URL.
+# - Commits listings.json when content changes.
+name: Sync listings.json from Google Sheet
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour; adjust as needed
+  workflow_dispatch: {}  # allows manual run
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch JSON from Sheet
+        env:
+          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
+        run: |
+          if [ -z "${SHEET_JSON_URL}" ]; then
+            echo "Missing SHEET_JSON_URL secret" >&2
+            exit 1
+          fi
+          echo "Fetching sheet JSON..."
+          curl -fsS "${SHEET_JSON_URL}" -o /tmp/sheet.json || (echo "Failed to fetch sheet JSON" >&2 && exit 1)
+          # Quick validation: ensure we received a JSON array
+          if ! jq -e 'type=="array"' /tmp/sheet.json >/dev/null 2>&1; then
+            echo "Fetched data is not a JSON array; contents below:" >&2
+            jq . /tmp/sheet.json || true
+            exit 1
+          fi
+          # Pretty-print and sort keys for stable diffs
+          jq -S '.' /tmp/sheet.json > listings.json
+
+      - name: Show diff (for logs)
+        run: |
+          git status --porcelain || true
+          git --no-pager diff --no-color || true
+
+      - name: Commit and push if changed
+        run: |
+          if git status --porcelain | grep -q listings.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add listings.json
+            git commit -m "chore: update listings.json from Google Sheet [ci skip]" || true
+            git push
+            echo "Updated listings.json and pushed to repo."
+          else
+            echo "No changes to listings.json."
+          fi
