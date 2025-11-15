@@ -20,6 +20,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug: Fetch and print raw JSON
+        env:
+          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
+        run: |
+          if [ -z "${SHEET_JSON_URL}" ]; then
+            echo "Missing SHEET_JSON_URL secret" >&2
+            exit 1
+          fi
+          echo "Fetching sheet JSON (debug)..."
+          curl -fsS "${SHEET_JSON_URL}" -o /tmp/sheet.json.raw || (echo "Failed to fetch sheet JSON" >&2 && exit 1)
+          echo "--- RAW RESPONSE BELOW ---"
+          cat /tmp/sheet.json.raw
+          echo "--- END RAW RESPONSE ---"
+
       - name: Fetch JSON from Sheet
         env:
           SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
@@ -29,7 +43,8 @@ jobs:
             exit 1
           fi
           echo "Fetching sheet JSON..."
-          curl -fsS "${SHEET_JSON_URL}" -o /tmp/sheet.json || (echo "Failed to fetch sheet JSON" >&2 && exit 1)
+          # Use the raw file from the debug step
+          cp /tmp/sheet.json.raw /tmp/sheet.json
           # Quick validation: ensure we received a JSON array
           if ! jq -e 'type=="array"' /tmp/sheet.json >/dev/null 2>&1; then
             echo "Fetched data is not a JSON array; contents below:" >&2
