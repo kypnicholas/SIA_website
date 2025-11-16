@@ -26,6 +26,8 @@ jobs:
           SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
           
       - name: Fetch sheet JSON (debug)
+        env:
+          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
         run: |
             echo "Fetching sheet JSON..."
             curl -s "$SHEET_JSON_URL" | tee response.txt
