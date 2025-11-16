@@ -22,6 +22,8 @@ jobs:
 
       - name: Print SHEET_JSON_URL
         run: echo "$SHEET_JSON_URL"
+        env:
+          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
           
       - name: Fetch sheet JSON (debug)
         run: |
