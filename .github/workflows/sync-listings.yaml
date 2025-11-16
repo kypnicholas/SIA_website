@@ -20,6 +20,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Print SHEET_JSON_URL
+        run: echo "$SHEET_JSON_URL"
+          
       - name: Fetch sheet JSON (debug)
         run: |
             echo "Fetching sheet JSON..."
