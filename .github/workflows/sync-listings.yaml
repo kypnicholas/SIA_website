@@ -25,7 +25,7 @@ jobs:
           echo "Fetching sheet JSON..."
           curl -s "$SHEET_JSON_URL" | tee response.txt
           cat response.txt
-          cat respons
+          cat response.txt | jq .
 
       - name: Fetch JSON from Sheet
         env:
