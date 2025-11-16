@@ -22,10 +22,12 @@ jobs:
 
       - name: Fetch sheet JSON (debug)
         run: |
-          echo "Fetching sheet JSON..."
-          curl -s "$SHEET_JSON_URL" | tee response.txt
-          cat response.txt
-          cat response.txt | jq .
+            echo "Fetching sheet JSON..."
+            curl -s "$SHEET_JSON_URL" | tee response.txt
+            echo "----- RAW RESPONSE BELOW -----"
+            cat response.txt
+            echo "----- END RAW RESPONSE -----"
+            cat response.txt | jq .
 
       - name: Fetch JSON from Sheet
         env:
