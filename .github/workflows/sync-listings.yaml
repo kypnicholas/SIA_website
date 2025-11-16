@@ -25,16 +25,16 @@ jobs:
         env:
           SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
           
-      - name: Fetch sheet JSON (debug)
-        env:
-          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
-        run: |
-          echo "Fetching sheet JSON..."
-          curl -sL "$SHEET_JSON_URL" | tee response.txt
-          echo "----- RAW RESPONSE BELOW -----"
-          cat response.txt
-          echo "----- END RAW RESPONSE -----"
-          cat response.txt | jq .
+#      - name: Fetch sheet JSON (debug)
+#        env:
+#          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
+#        run: |
+#          echo "Fetching sheet JSON..."
+#          curl -sL "$SHEET_JSON_URL" | tee response.txt
+#          echo "----- RAW RESPONSE BELOW -----"
+#          cat response.txt
+#          echo "----- END RAW RESPONSE -----"
+#          cat response.txt | jq .
 
       - name: Fetch JSON from Sheet
         env:
