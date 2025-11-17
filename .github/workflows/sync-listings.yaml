@@ -5,7 +5,7 @@ name: Sync listings.json from Google Sheet
 
 on:
   schedule:
-    - cron: '0 * * * *' # every hour; adjust as needed
+    - cron: '0 0 * * *' # every day at midnight UTC; 
   workflow_dispatch: {}  # allows manual run
 
 permissions:
@@ -20,21 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print SHEET_JSON_URL
-        run: echo "$SHEET_JSON_URL"
-        env:
-          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
+#      - name: Print SHEET_JSON_URL
+#        run: echo "$SHEET_JSON_URL"
+#        env:
+#          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
           
-      - name: Fetch sheet JSON (debug)
-        env:
-          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
-        run: |
-          echo "Fetching sheet JSON..."
-          curl -sL "$SHEET_JSON_URL" | tee response.txt
-          echo "----- RAW RESPONSE BELOW -----"
-          cat response.txt
-          echo "----- END RAW RESPONSE -----"
-          cat response.txt | jq .
+#      - name: Fetch sheet JSON (debug)
+#        env:
+#          SHEET_JSON_URL: ${{ secrets.SHEET_JSON_URL }}
+#        run: |
+#          echo "Fetching sheet JSON..."
+#          curl -sL "$SHEET_JSON_URL" | tee response.txt
+#          echo "----- RAW RESPONSE BELOW -----"
+#          cat response.txt
+#          echo "----- END RAW RESPONSE -----"
+#          cat response.txt | jq .
 
       - name: Fetch JSON from Sheet
         env:
