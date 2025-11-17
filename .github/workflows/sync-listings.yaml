@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           echo "Fetching sheet JSON..."
-          curl -fsS "${SHEET_JSON_URL}" -o /tmp/sheet.json || (echo "Failed to fetch sheet JSON" >&2 && exit 1)
+          curl -fsSL "${SHEET_JSON_URL}" -o /tmp/sheet.json || (echo "Failed to fetch sheet JSON" >&2 && exit 1)
           # Quick validation: ensure we received a JSON array
           if ! jq -e 'type=="array"' /tmp/sheet.json >/dev/null 2>&1; then
             echo "Fetched data is not a JSON array; contents below:" >&2
