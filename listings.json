@@ -14,7 +14,7 @@
     "shortDescription": "",
     "size": "10703 m²",
     "status": "Available",
-    "title": "Forest Plot (REG 05914)",
+    "title": "Forest Plot 001",
     "titleDeed": "Yes"
   },
   {
@@ -32,7 +32,7 @@
     "shortDescription": "",
     "size": "5686 m²",
     "status": "Pending",
-    "title": "Farm Plot (REG 05956)",
+    "title": "Farm Plot 002",
     "titleDeed": "Yes"
   },
   {
@@ -50,7 +50,7 @@
     "shortDescription": "",
     "size": "1673 m²",
     "status": "Available",
-    "title": "Roadside Plot (REG 06820)",
+    "title": "Roadside Plot 003",
     "titleDeed": "Yes"
   },
   {
@@ -68,7 +68,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "10 m²",
     "status": "Available",
-    "title": "Plot (REG 06821)",
+    "title": "Plot 004",
     "titleDeed": "Yes"
   },
   {
@@ -86,7 +86,7 @@
     "shortDescription": "Plot in Agios, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "1821 m²",
     "status": "Available",
-    "title": "Plot (REG 06822)",
+    "title": "Plot 005",
     "titleDeed": "Yes"
   },
   {
@@ -104,7 +104,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "1673 m²",
     "status": "Available",
-    "title": "Plot (REG 06823)",
+    "title": "Plot 006",
     "titleDeed": "Yes"
   },
   {
@@ -122,7 +122,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "892 m²",
     "status": "Available",
-    "title": "Plot (REG 06824)",
+    "title": "Plot 007",
     "titleDeed": "Yes"
   },
   {
@@ -140,7 +140,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "5 m²",
     "status": "Available",
-    "title": "Plot (REG 06825)",
+    "title": "Plot 008",
     "titleDeed": "Yes"
   },
   {
@@ -158,7 +158,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "3940 m²",
     "status": "Available",
-    "title": "Plot (REG 06826)",
+    "title": "Plot 009",
     "titleDeed": "Yes"
   },
   {
@@ -176,7 +176,7 @@
     "shortDescription": "Plot in Agios Giannis, Sia, Nicosia. Z1 zone, 0.06 build ratio, 2 floors.",
     "size": "1905 m²",
     "status": "Available",
-    "title": "Plot (REG 06829)",
+    "title": "Plot 010",
     "titleDeed": "Yes"
   },
   {
@@ -194,7 +194,7 @@
     "shortDescription": "Plot in Kokkinogia, Sia, Nicosia. G3 zone, 0.1 build ratio, 2 floors.",
     "size": "6689 m²",
     "status": "Available",
-    "title": "Plot (REG 07065)",
+    "title": "Plot 011",
     "titleDeed": "Yes"
   },
   {
@@ -212,25 +212,7 @@
     "shortDescription": "Plot in Ampelia tou Mathaiou, Sia, Nicosia. G3 zone, 0.1 build ratio, 2 floors.",
     "size": "1338 m²",
     "status": "Available",
-    "title": "Plot (REG 07746)",
+    "title": "Plot 012",
     "titleDeed": "Yes"
-  },
-  {
-    "contactEmail": "",
-    "contactPhone": "",
-    "description": "",
-    "id": "plot-013",
-    "image": "listing_images/coming_soon.jpg",
-    "imageAlt": "",
-    "latitude": "",
-    "location": "",
-    "longitude": "",
-    "notes": "",
-    "price": "",
-    "shortDescription": "",
-    "size": "",
-    "status": "",
-    "title": "test",
-    "titleDeed": ""
   }
 ]
