@@ -154,8 +154,18 @@ function renderFilters(data) {
         const priceMaxInput = document.getElementById('filterPriceMaxInput');
         pricePopover.style.display = 'none';
         filters = filters || {};
-        filters.priceMin = parseInt(priceMinInput.value);
-        filters.priceMax = parseInt(priceMaxInput.value);
+        let min = parseFloat(priceMinInput.value);
+        let max = parseFloat(priceMaxInput.value);
+        if (min > max) {
+          min = max;
+          priceMinInput.value = min;
+        }
+        if (max < min) {
+          max = min;
+          priceMaxInput.value = max;
+        }
+        filters.priceMin = min;
+        filters.priceMax = max;
         applyFilters();
         updatePriceBtnPlaceholder();
       });
@@ -366,10 +376,11 @@ function applyFilters() {
     }
     // If areaNum is not a valid number, exclude this listing
     if (isNaN(areaNum)) return false;
-    // Parse price (e.g. "€102,700 (2021 valuation)")
+    // Parse price (handles both "112970" and "€112,970")
     let priceNum = Infinity;
     if (item.price) {
-      const match = item.price.replace(/,/g, '').match(/€([\d.]+)/);
+      let priceStr = String(item.price).replace(/,/g, '');
+      let match = priceStr.match(/([\d.]+)/);
       if (match) priceNum = parseFloat(match[1]);
     }
     const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
