@@ -75,19 +75,35 @@ function renderFilters(data) {
       }
       areaBtn.innerHTML = `${min === areaMin && max === areaMax ? `${areaMin}–${areaMax} m²` : `${min}–${max} m²`} <span class="area-caret">▼</span>`;
     }
+    function formatPrice(num) {
+      if (typeof num !== 'number' || isNaN(num) || num === Infinity || num === -Infinity) return '';
+      return '€' + num.toLocaleString();
+    }
     function updatePriceBtnPlaceholder(forceDefault = false) {
       const priceBtn = document.getElementById('priceDropdownBtn');
       const priceMinInput = document.getElementById('filterPriceMinInput');
       const priceMaxInput = document.getElementById('filterPriceMaxInput');
-      let min = parseInt(priceMinInput.value);
-      let max = parseInt(priceMaxInput.value);
+      let min = parseFloat(priceMinInput.value);
+      let max = parseFloat(priceMaxInput.value);
       if (forceDefault) {
         min = priceMin;
         max = priceMax;
         priceMinInput.value = priceMin;
         priceMaxInput.value = priceMax;
       }
-      priceBtn.innerHTML = `${min === priceMin && max === priceMax ? `€${priceMin}–€${priceMax}` : `€${min}–€${max}`} <span class="price-caret">▼</span>`;
+      let label = '';
+      if ((min === priceMin || isNaN(min)) && (max === priceMax || isNaN(max))) {
+        label = 'Any price';
+      } else if ((min !== priceMin && !isNaN(min)) && (max === priceMax || isNaN(max))) {
+        label = `From ${formatPrice(min)}`;
+      } else if ((min === priceMin || isNaN(min)) && (max !== priceMax && !isNaN(max))) {
+        label = `Up to ${formatPrice(max)}`;
+      } else if ((min !== priceMin && !isNaN(min)) && (max !== priceMax && !isNaN(max))) {
+        label = `${formatPrice(min)}–${formatPrice(max)}`;
+      } else {
+        label = 'Any price';
+      }
+      priceBtn.innerHTML = `${label} <span class="price-caret">▼</span>`;
     }
 
     // Area input events
@@ -216,13 +232,15 @@ function renderFilters(data) {
   }).filter(x => !isNaN(x));
   const priceVals = data.map(item => {
     if (!item.price) return NaN;
-    const match = item.price.replace(/,/g, '').match(/€([\d.]+)/);
+    // Accept both plain numbers and euro-prefixed
+    let priceStr = String(item.price).replace(/,/g, '');
+    let match = priceStr.match(/([\d.]+)/);
     return match ? parseFloat(match[1]) : NaN;
   }).filter(x => !isNaN(x));
-  const areaMin = Math.min(...areaVals);
-  const areaMax = Math.max(...areaVals);
-  const priceMin = Math.min(...priceVals);
-  const priceMax = Math.max(...priceVals);
+  const areaMin = areaVals.length ? Math.min(...areaVals) : 0;
+  const areaMax = areaVals.length ? Math.max(...areaVals) : 0;
+  const priceMin = priceVals.length ? Math.min(...priceVals) : 0;
+  const priceMax = priceVals.length ? Math.max(...priceVals) : 0;
 
   // Compute current filter values for placeholders
   const areaMinVal = filters?.areaMin ?? areaMin;
