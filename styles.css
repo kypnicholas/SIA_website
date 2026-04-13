@@ -36,10 +36,49 @@
 .site-header .site-subheader {
   position: relative;
   z-index: 3;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #fff !important;
+  letter-spacing: 0.02em;
+  margin: 10px 0 16px 0;
+  padding-left: 0.75em;
+  border-left: 3px solid rgba(110, 220, 110, 0.75);
 }
 .site-header .site-subheader-desc {
   position: relative;
   z-index: 3;
+}
+.site-header .site-subheader-close {
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+  margin: 16px 0 0 0;
+  position: relative;
+  z-index: 3;
+  opacity: 0.88;
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+  position: relative;
+  z-index: 3;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 20, 10, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 0.87rem;
+  font-weight: 500;
+  padding: 5px 13px;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
+  letter-spacing: 0.01em;
 }
 .card-status-sticker {
   position: absolute;
@@ -532,7 +571,7 @@ body{
   background: url('website_images/header_long.png') center center/cover no-repeat;
   color: #fff;
   padding-top: 56px;
-  padding-bottom: 88px;
+  padding-bottom: 120px;
   position: relative;
   overflow: hidden;
 }
@@ -590,7 +629,8 @@ body{
 .site-header p,
 .site-header .subtitle,
 .site-header .site-subtitle,
-.site-header .site-subheader-desc 
+.site-header .site-subheader-desc,
+.site-header .site-subheader-close
 {
   color: #fff !important;
   text-shadow: 0 1px 8px rgba(0,0,0,0.22);

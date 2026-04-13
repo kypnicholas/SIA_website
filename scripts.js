@@ -412,12 +412,33 @@ function applyFilters() {
   renderListings(filteredListings);
 }
 
+function renderHeroStats(data) {
+  const statsEl = document.getElementById('heroStats');
+  if (!statsEl) return;
+  const total = data.length;
+  const available = data.filter(x => x.status === 'Available').length;
+  const pending = data.filter(x => x.status === 'Pending').length;
+  const withDeeds = data.filter(x => x.titleDeed === 'Yes' || x.titleDeed === true).length;
+  const iconPlots = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#fff" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="#fff" stroke-width="1.5"/></svg>`;
+  const iconPin = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="#fff" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="#fff" stroke-width="1.5"/></svg>`;
+  const iconCheck = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M4 10.5l4.5 4.5 7.5-9" stroke="#6de06d" stroke-width="2.2" fill="none"/></svg>`;
+  const iconClock = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="10" cy="10" r="8" stroke="#f5c842" stroke-width="2"/><path d="M10 6v4l3 2" stroke="#f5c842" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  statsEl.innerHTML = `
+    <span class="hero-stat">${iconPlots} ${total} plots listed</span>
+    <span class="hero-stat">${iconPin} Sia, Nicosia</span>
+    <span class="hero-stat">${iconCheck} ${withDeeds} with title deeds</span>
+    <span class="hero-stat">${iconCheck} ${available} available now</span>
+    ${pending > 0 ? `<span class="hero-stat">${iconClock} ${pending} pending — enquiries welcome</span>` : ''}
+  `;
+}
+
 async function loadListings(){
   try{
     const res = await fetch('listings.json', {cache: "no-cache"});
     if(!res.ok) throw new Error('Failed to load listings.json');
     const data = await res.json();
     allListings = data;
+    renderHeroStats(data);
     renderFilters(data);
     renderListings(data);
   }catch(err){
