@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+// Module-level state
+let allListings = [];
+let filteredListings = [];
+let filters = {};
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
 const modal = document.getElementById('modal');
@@ -29,8 +33,6 @@ const modalTitle = document.getElementById('modalTitle');
 const modalImage = document.getElementById('modalImage');
 const modalDesc = document.getElementById('modalDesc');
 const modalDetails = document.getElementById('modalDetails');
-const modalEmail = document.getElementById('modalEmail');
-const modalPhone = document.getElementById('modalPhone');
 const modalMap = document.getElementById('modalMap');
 const yearEl = document.getElementById('year');
 
@@ -268,7 +270,7 @@ function renderFilters(data) {
         </select>
       </label>
       <div class="area-dropdown-group">
-        <label for="areaDropdownBtn" class="filter-label">Area (m²)</label>
+        <span class="filter-label">Area (m²)</span>
         <button type="button" id="areaDropdownBtn" class="area-dropdown-btn">
           ${areaMinVal === areaMin && areaMaxVal === areaMax ? `${areaMin}–${areaMax} m²` : `${areaMinVal}–${areaMaxVal} m²`} <span class="area-caret">▼</span>
         </button>
@@ -289,7 +291,7 @@ function renderFilters(data) {
         </div>
       </div>
       <div class="price-dropdown-group">
-        <label for="priceDropdownBtn" class="filter-label">Price (€)</label>
+        <span class="filter-label">Price (€)</span>
         <button type="button" id="priceDropdownBtn" class="price-dropdown-btn">
           ${priceMinVal === priceMin && priceMaxVal === priceMax ? `€${priceMin}–€${priceMax}` : `€${priceMinVal}–€${priceMaxVal}`} <span class="price-caret">▼</span>
         </button>
@@ -346,19 +348,6 @@ function renderFilters(data) {
 
   // Optionally, add input validation or UI feedback here
   // (e.g., prevent min > max, clamp to allowed range, etc.)
-  // Apply buttons
-  if (areaApplyBtn) {
-    areaApplyBtn.addEventListener('click', () => {
-      areaPopover.style.display = 'none';
-      applyFilters();
-    });
-  }
-  if (priceApplyBtn) {
-    priceApplyBtn.addEventListener('click', () => {
-      pricePopover.style.display = 'none';
-      applyFilters();
-    });
-  }
   if (form) {
     form.addEventListener('reset', (e) => {
       setTimeout(() => {
@@ -438,6 +427,17 @@ async function loadListings(){
 }
 
 function renderListings(data){
+  // Professional empty state SVG icon
+  function svgEmptyState() {
+    return `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="12" width="32" height="28" rx="4" fill="#f4faf4" stroke="#b2dcb2" stroke-width="2"/>
+    <rect x="14" y="18" width="20" height="4" rx="2" fill="#b2dcb2"/>
+    <rect x="14" y="26" width="12" height="3" rx="1.5" fill="#dbeedd"/>
+    <rect x="14" y="32" width="16" height="3" rx="1.5" fill="#dbeedd"/>
+    <rect x="12" y="8" width="24" height="6" rx="3" fill="#b2dcb2"/>
+    <circle cx="38" cy="16" r="2" fill="#b2dcb2"/>
+  </svg>`;
+  }
   if(!Array.isArray(data) || data.length === 0){
     listingsEl.innerHTML = `
       <div class="empty-listings-message">
@@ -447,18 +447,6 @@ function renderListings(data){
     `;
     return;
   }
-
-// Professional empty state SVG icon
-function svgEmptyState() {
-  return `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="8" y="12" width="32" height="28" rx="4" fill="#f4faf4" stroke="#b2dcb2" stroke-width="2"/>
-    <rect x="14" y="18" width="20" height="4" rx="2" fill="#b2dcb2"/>
-    <rect x="14" y="26" width="12" height="3" rx="1.5" fill="#dbeedd"/>
-    <rect x="14" y="32" width="16" height="3" rx="1.5" fill="#dbeedd"/>
-    <rect x="12" y="8" width="24" height="6" rx="3" fill="#b2dcb2"/>
-    <circle cx="38" cy="16" r="2" fill="#b2dcb2"/>
-  </svg>`;
-}
   listingsEl.innerHTML = '';
   data.forEach(item => {
     const card = document.createElement('article');
@@ -500,57 +488,6 @@ function openModal(item){
       ? `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M5 10.5l4 4 6-8" stroke="#2b7a2b" stroke-width="2.5" fill="none"/></svg>`
       : '';
   }
-  // PDF export: dynamically create a visible print-friendly container
-  function buildPdfContent() {
-    // Inline SVG icon functions for PDF context
-    function svgArea() {
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
-    }
-    function svgPrice() {
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="10" cy="10" r="8" stroke="#2b7a2b" stroke-width="2" fill="none"/><text x="10" y="14" text-anchor="middle" font-size="10" fill="#2b7a2b" font-family="Arial">€</text></svg>`;
-    }
-    function svgLocation() {
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
-    }
-    function svgNotes() {
-      // Notepad/memo icon
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="4" y="3" width="12" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="#fff"/><path d="M7 7h6M7 10h6M7 13h4" stroke="#2b7a2b" stroke-width="1.5"/><circle cx="7" cy="5" r="0.7" fill="#2b7a2b"/><circle cx="13" cy="5" r="0.7" fill="#2b7a2b"/></svg>`;
-    }
-    function svgPhone() {
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
-    }
-    function svgContact() {
-      return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 5l7 6 7-6" stroke="#2b7a2b" stroke-width="1.5" fill="none"/></svg>`;
-    }
-    const div = document.createElement('div');
-    div.style.background = '#fff';
-    div.style.color = '#222';
-    div.style.fontSize = '1rem';
-    div.style.width = '600px';
-    div.style.margin = '0 auto';
-    div.style.padding = '0';
-    div.innerHTML = `
-      <h3 style="margin-top:0">${escapeHtml(item.title || '—')}</h3>
-      <img src="${escapeAttr(item.image || '')}" alt="${escapeAttr(item.imageAlt || item.title || '')}" style="width:100%;max-width:420px;display:block;margin:12px 0;" />
-      <p style="margin:12px 0;">${escapeHtml(item.description || '—')}</p>
-      <ul style="list-style:none;padding:0;margin:0 0 12px 0;">
-        <li><span>${svgArea()}</span> ${escapeHtml(item.size || '—')}</li>
-        <li><span>${svgPrice()}</span> ${escapeHtml(item.price || '—')}</li>
-        <li><span>${svgLocation()}</span> ${escapeHtml(item.location || '—')}</li>
-        <li><span>${svgNotes()}</span> ${escapeHtml(item.notes || '—')}</li>
-        <li><span>${svgPhone()}</span> ${escapeHtml(item.contactPhone || '—')}</li>
-        <li><span>${svgContact()}</span> ${escapeHtml(item.contactEmail || '—')}</li>
-      </ul>
-  
-    `;
-    document.body.appendChild(div);
-    return div;
-  }
-  // Add SVG icon for contact info in modal
-  const modalContactIcon = document.getElementById('modalContactIcon');
-  if (modalContactIcon) {
-    modalContactIcon.innerHTML = svgContact();
-  }
   modalTitle.textContent = item.title;
   modalImage.src = item.image;
   modalImage.alt = item.imageAlt || item.title;
@@ -562,7 +499,7 @@ function openModal(item){
   <li><span class="icon-attr" title="Title Deeds">${svgTitleDeed()}</span> Title deeds available ${svgTick(item.titleDeed === 'Yes' || item.titleDeed === true)}</li>
     <li><span class="icon-attr" title="Notes">${svgNotes()}</span> ${escapeHtml(item.notes || '—')}</li>
     <li><span class="icon-attr" title="Telephone">${svgPhone()}</span> <a href="tel:${escapeHtml(item.contactPhone || '')}">${escapeHtml(item.contactPhone || '—')}</a></li>
-    <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || 'contact@example.com')}">${escapeHtml(item.contactEmail || '—')}</a></li>
+    <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || 'kypmaria@cytanet.com.cy')}">${escapeHtml(item.contactEmail || '—')}</a></li>
   `;
   // Attach PDF export event listener (ensure button exists)
   const pdfBtn = document.getElementById('downloadPdfBtn');
@@ -649,7 +586,7 @@ function escapeHtml(str){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+function escapeAttr(s){ return escapeHtml(s); }
 
 loadListings();
 
