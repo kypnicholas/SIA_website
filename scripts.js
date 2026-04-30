@@ -26,6 +26,9 @@ let allListings = [];
 let filteredListings = [];
 let filterState = {};
 let popoverAbortController = null;
+let focusTrapAbortController = null;
+let modalTriggerEl = null;
+const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='170' viewBox='0 0 400 170'%3E%3Crect width='400' height='170' fill='%23f4faf4'/%3E%3Ctext x='200' y='90' text-anchor='middle' fill='%23b2dcb2' font-size='14' font-family='system-ui'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
 const modal = document.getElementById('modal');
@@ -83,6 +86,44 @@ function parsePrice(priceStr) {
   const str = String(priceStr).replace(/,/g, '');
   const match = str.match(/([\d.]+)/);
   return match ? parseFloat(match[1]) : NaN;
+}
+
+// Persist filter state in the URL so links can be shared / bookmarked
+function readFiltersFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('location')) filterState.location = params.get('location');
+  if (params.has('sort'))     filterState.sort     = params.get('sort');
+  if (params.has('areaMin'))  filterState.areaMin  = parseFloat(params.get('areaMin'));
+  if (params.has('areaMax'))  filterState.areaMax  = parseFloat(params.get('areaMax'));
+  if (params.has('priceMin')) filterState.priceMin = parseFloat(params.get('priceMin'));
+  if (params.has('priceMax')) filterState.priceMax = parseFloat(params.get('priceMax'));
+  if (params.has('search'))   filterState.search   = params.get('search');
+}
+function writeFiltersToURL() {
+  const params = new URLSearchParams();
+  if (filterState.location) params.set('location', filterState.location);
+  if (filterState.sort)     params.set('sort',     filterState.sort);
+  if (filterState.areaMin  != null) params.set('areaMin',  filterState.areaMin);
+  if (filterState.areaMax  != null) params.set('areaMax',  filterState.areaMax);
+  if (filterState.priceMin != null) params.set('priceMin', filterState.priceMin);
+  if (filterState.priceMax != null) params.set('priceMax', filterState.priceMax);
+  if (filterState.search)   params.set('search',   filterState.search);
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+}
+
+// Show shimmer skeleton cards while listings.json is loading
+function showSkeleton(count = 4) {
+  listingsEl.innerHTML = Array.from({ length: count }, () => `
+    <div class="card skeleton-card" aria-hidden="true">
+      <div class="skeleton skeleton-img"></div>
+      <div class="card-body">
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line skeleton-line--short"></div>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderFilters(data) {
@@ -234,6 +275,14 @@ function renderFilters(data) {
         applyFilters();
       });
     }
+    // Text search — live filter on every keystroke
+    const searchInput = document.getElementById('filterSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        filterState.search = searchInput.value.trim();
+        applyFilters();
+      });
+    }
   }, 0);
   // Dual-handle logic for area
   // (removed duplicate/early declarations; all slider variables are declared after DOM update below)
@@ -259,15 +308,9 @@ function renderFilters(data) {
 
   filtersEl.innerHTML = `
     <form id="filterForm" class="filter-form">
-      <div class="sort-group">
-        <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect">
-          <option value="">Default</option>
-          <option value="size-asc">Area (min first)</option>
-          <option value="size-desc">Area (max first)</option>
-          <option value="price-asc">Price (min first)</option>
-          <option value="price-desc">Price (max first)</option>
-        </select>
+      <div class="search-group">
+        <label for="filterSearch">Search:</label>
+        <input type="text" id="filterSearch" class="search-input" placeholder="Title or description…" value="${escapeHtml(filterState?.search || '')}">
       </div>
       <label>
         Location:
@@ -318,9 +361,24 @@ function renderFilters(data) {
           <button type="button" id="priceApplyBtn" class="price-apply-btn">Apply</button>
         </div>
       </div>
+      <div class="sort-group">
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+          <option value="">Default</option>
+          <option value="size-asc">Area (min first)</option>
+          <option value="size-desc">Area (max first)</option>
+          <option value="price-asc">Price (min first)</option>
+          <option value="price-desc">Price (max first)</option>
+        </select>
+      </div>
       <button type="reset">Reset all</button>
     </form>
   `;
+  // Pre-fill dropdowns synchronously so applyFilters() on initial URL-restore reads correct values
+  const _locationSelect = document.getElementById('filterLocation');
+  if (_locationSelect) _locationSelect.value = filterState.location || '';
+  const _sortSelect = document.getElementById('sortSelect');
+  if (_sortSelect) _sortSelect.value = filterState.sort || '';
   // Add event listeners
   const form = document.getElementById('filterForm');
   // Area popover logic
@@ -365,6 +423,7 @@ function renderFilters(data) {
     form.addEventListener('reset', (e) => {
       setTimeout(() => {
         filterState = {};
+        writeFiltersToURL();
         renderFilters(allListings);
         renderListings(allListings);
       }, 0);
@@ -375,10 +434,11 @@ function renderFilters(data) {
 function applyFilters() {
   const areaMinVal = parseFloat(document.getElementById('filterAreaMinInput')?.value);
   const areaMaxVal = parseFloat(document.getElementById('filterAreaMaxInput')?.value);
-  const locVal = document.getElementById('filterLocation').value;
+  const locVal = document.getElementById('filterLocation')?.value || '';
   const priceMinVal = parseFloat(document.getElementById('filterPriceMinInput')?.value);
   const priceMaxVal = parseFloat(document.getElementById('filterPriceMaxInput')?.value);
   const sortVal = document.getElementById('sortSelect')?.value || '';
+  const searchVal = (filterState.search || '').trim().toLowerCase();
 
   const withParsed = allListings.map(item => {
     const areaNum = parseArea(item.size);
@@ -393,7 +453,10 @@ function applyFilters() {
       const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
       const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
       const locOk = !locVal || item.location === locVal;
-      return areaOk && priceOk && locOk;
+      const searchOk = !searchVal ||
+        (item.title || '').toLowerCase().includes(searchVal) ||
+        (item.shortDescription || '').toLowerCase().includes(searchVal);
+      return areaOk && priceOk && locOk && searchOk;
     })
     .sort((a, b) => {
       if (sortVal === 'size-asc') return a.areaNum - b.areaNum;
@@ -404,6 +467,7 @@ function applyFilters() {
     })
     .map(({ item }) => item);
 
+  writeFiltersToURL();
   renderListings(filteredListings);
 }
 
@@ -428,6 +492,8 @@ function renderHeroStats(data) {
 }
 
 async function loadListings(){
+  showSkeleton();        // show shimmer cards immediately while fetch is in-flight
+  readFiltersFromURL();  // restore any filter state from the URL before rendering
   try{
     const res = await fetch('listings.json', {cache: "no-cache"});
     if(!res.ok) throw new Error('Failed to load listings.json');
@@ -435,7 +501,12 @@ async function loadListings(){
     allListings = data;
     renderHeroStats(data);
     renderFilters(data);
-    renderListings(data);
+    // If URL params were present, apply them now; otherwise show all listings
+    if (Object.keys(filterState).length > 0) {
+      applyFilters();
+    } else {
+      renderListings(data);
+    }
   }catch(err){
     listingsEl.innerHTML = `<p class="error">Unable to load listings. (${err.message})</p>`;
     console.error(err);
@@ -487,6 +558,10 @@ function renderListings(data){
       </div>
     `;
     listingsEl.appendChild(card);
+
+    // Replace broken images with an inline SVG placeholder — no extra network request
+    const img = card.querySelector('img');
+    img.addEventListener('error', () => { img.src = PLACEHOLDER_IMG; }, { once: true });
 
     const btn = card.querySelector('button');
     btn.addEventListener('click', () => openModal(item));
@@ -541,12 +616,35 @@ function openModal(item){
   }
 
   modal.setAttribute('aria-hidden', 'false');
-  // trap focus briefly (basic)
+
+  // Save the element that triggered the modal so we can restore focus on close
+  modalTriggerEl = document.activeElement;
+
+  // Full WCAG focus trap: Tab/Shift+Tab cycle stays inside the modal
+  if (focusTrapAbortController) focusTrapAbortController.abort();
+  focusTrapAbortController = new AbortController();
+  const focusableEls = Array.from(modal.querySelectorAll(
+    'a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+  ));
+  const firstFocusable = focusableEls[0];
+  const lastFocusable  = focusableEls[focusableEls.length - 1];
+  modal.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) { e.preventDefault(); lastFocusable.focus(); }
+    } else {
+      if (document.activeElement === lastFocusable)  { e.preventDefault(); firstFocusable.focus(); }
+    }
+  }, { signal: focusTrapAbortController.signal });
+
   modalClose.focus();
 }
 
 function closeModal(){
   modal.setAttribute('aria-hidden', 'true');
+  // Abort the focus trap and return focus to the element that opened the modal
+  if (focusTrapAbortController) { focusTrapAbortController.abort(); focusTrapAbortController = null; }
+  if (modalTriggerEl) { modalTriggerEl.focus(); modalTriggerEl = null; }
 }
 
 if (modalClose) {
