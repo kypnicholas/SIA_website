@@ -44,7 +44,7 @@
 
     <section class="contact">
       <h2>Contact</h2>
-      <p>Interested in a plot? Email us at <a id="contactEmail" href="mailto:kypmaria@cytanet.com.cy">kypmaria@cytanet.com.cy</a> or call <a id="contactPhone" href="tel:+35799697061">+357 99 697061</a>.</p>
+      <p>Interested in a plot? Email us at <a href="mailto:kypmaria@cytanet.com.cy">kypmaria@cytanet.com.cy</a> or call <a href="tel:+35799697061">+357 99 697061</a>.</p>
       <p>We can arrange visits and provide maps and documents on request.</p>
     </section>
   </main>
@@ -59,11 +59,9 @@
         </button>
         <button id="modalClose" class="modal-close" aria-label="Close">&times;</button>
       </div>
-  <div id="modalPdfContent"></div>
   <img id="modalImage" src="" alt="" />
   <p id="modalDesc"></p>
   <ul id="modalDetails" class="details-list"></ul>
-      <p><a id="modalMap" href="#" target="_blank" rel="noopener" title="View on Google Maps">View on Google Maps</a></p>
     </div>
   </div>
 
@@ -78,8 +76,8 @@
   </footer>
 
   <!-- Add html2canvas and jsPDF from CDN for screenshot-based PDF export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
   <script src="scripts.js"></script>
 </body>
 </html>

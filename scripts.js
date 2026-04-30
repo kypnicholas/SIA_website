@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Module-level state
 let allListings = [];
 let filteredListings = [];
-let filters = {};
+let filterState = {};
+let popoverAbortController = null;
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
 const modal = document.getElementById('modal');
@@ -33,33 +34,61 @@ const modalTitle = document.getElementById('modalTitle');
 const modalImage = document.getElementById('modalImage');
 const modalDesc = document.getElementById('modalDesc');
 const modalDetails = document.getElementById('modalDetails');
-const modalMap = document.getElementById('modalMap');
 const yearEl = document.getElementById('year');
 
 yearEl.textContent = new Date().getFullYear();
 
 
 // Inline SVG icon functions (must be defined before use)
-function svgArea() {
-  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+function svgArea(color = '#2b7a2b') {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="${color}" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="${color}" stroke-width="1.5"/></svg>`;
 }
 function svgPrice() {
   return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="10" cy="10" r="8" stroke="#2b7a2b" stroke-width="2" fill="none"/><text x="10" y="14" text-anchor="middle" font-size="10" fill="#2b7a2b" font-family="Arial">€</text></svg>`;
 }
-function svgLocation() {
-  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+function svgLocation(color = '#2b7a2b') {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="${color}" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="${color}" stroke-width="1.5"/></svg>`;
 }
 function svgContact() {
   return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 5l7 6 7-6" stroke="#2b7a2b" stroke-width="1.5" fill="none"/></svg>`;
 }
-
 function svgNotes() {
-  // Pencil icon for notes
   return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M15.232 5.232l-10 10V17h1.768l10-10-1.768-1.768zM17.414 3.414a2 2 0 0 0-2.828 0l-1.172 1.172 2.828 2.828 1.172-1.172a2 2 0 0 0 0-2.828z" stroke="#2b7a2b" stroke-width="1.5" fill="#fff"/></svg>`;
 }
+function svgPhone() {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
+}
+function svgTitleDeed() {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="4" y="3" width="12" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="#fff"/><path d="M7 7h6M7 10h6M7 13h4" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
+}
+function svgTick(checked) {
+  return checked
+    ? `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M5 10.5l4 4 6-8" stroke="#2b7a2b" stroke-width="2.5" fill="none"/></svg>`
+    : '';
+}
 
+function parseArea(sizeStr) {
+  if (!sizeStr) return NaN;
+  let areaStr = sizeStr.replace(/[^\d.,]/g, '');
+  if (areaStr.includes(',') && areaStr.includes('.')) {
+    areaStr = areaStr.replace(/\./g, '').replace(/,/g, '.');
+  } else {
+    areaStr = areaStr.replace(/,/g, '');
+  }
+  const match = areaStr.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : NaN;
+}
+function parsePrice(priceStr) {
+  if (!priceStr) return NaN;
+  const str = String(priceStr).replace(/,/g, '');
+  const match = str.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : NaN;
+}
 
 function renderFilters(data) {
+  if (popoverAbortController) popoverAbortController.abort();
+  popoverAbortController = new AbortController();
+  const signal = popoverAbortController.signal;
   // All DOM-dependent logic must come after filtersEl.innerHTML
   setTimeout(() => {
     // Helper to update area button placeholder
@@ -158,9 +187,8 @@ function renderFilters(data) {
         const areaMinInput = document.getElementById('filterAreaMinInput');
         const areaMaxInput = document.getElementById('filterAreaMaxInput');
         areaPopover.style.display = 'none';
-        filters = filters || {};
-        filters.areaMin = parseInt(areaMinInput.value);
-        filters.areaMax = parseInt(areaMaxInput.value);
+        filterState.areaMin = parseInt(areaMinInput.value);
+        filterState.areaMax = parseInt(areaMaxInput.value);
         applyFilters();
         updateAreaBtnPlaceholder();
       });
@@ -171,7 +199,6 @@ function renderFilters(data) {
         const priceMinInput = document.getElementById('filterPriceMinInput');
         const priceMaxInput = document.getElementById('filterPriceMaxInput');
         pricePopover.style.display = 'none';
-        filters = filters || {};
         let min = parseFloat(priceMinInput.value);
         let max = parseFloat(priceMaxInput.value);
         if (min > max) {
@@ -182,21 +209,18 @@ function renderFilters(data) {
           max = min;
           priceMaxInput.value = max;
         }
-        filters.priceMin = min;
-        filters.priceMax = max;
+        filterState.priceMin = min;
+        filterState.priceMax = max;
         applyFilters();
         updatePriceBtnPlaceholder();
       });
     }
-  }, 0);
-  // Attach event listener to location dropdown after rendering
-  setTimeout(() => {
+    // Attach event listener to location dropdown after rendering
     const locationSelect = document.getElementById('filterLocation');
     if (locationSelect) {
-      locationSelect.value = filters?.location || '';
+      locationSelect.value = filterState?.location || '';
       locationSelect.addEventListener('change', () => {
-        filters = filters || {};
-        filters.location = locationSelect.value;
+        filterState.location = locationSelect.value;
         applyFilters();
       });
     }
@@ -204,10 +228,9 @@ function renderFilters(data) {
     // Add event listener for sort dropdown
     const sortSelect = document.getElementById('sortSelect');
     if (sortSelect) {
-      sortSelect.value = filters?.sort || '';
+      sortSelect.value = filterState?.sort || '';
       sortSelect.addEventListener('change', () => {
-        filters = filters || {};
-        filters.sort = sortSelect.value;
+        filterState.sort = sortSelect.value;
         applyFilters();
       });
     }
@@ -221,34 +244,18 @@ function renderFilters(data) {
   // Get unique locations
   const locations = Array.from(new Set(data.map(item => item.location).filter(Boolean)));
   // Compute min/max for area and price from data
-  const areaVals = data.map(item => {
-    if (!item.size) return NaN;
-    let areaStr = item.size.replace(/[^\d.,]/g, '');
-    if (areaStr.includes(',') && areaStr.includes('.')) {
-      areaStr = areaStr.replace(/\./g, '').replace(/,/g, '.');
-    } else {
-      areaStr = areaStr.replace(/,/g, '');
-    }
-    const match = areaStr.match(/([\d.]+)/);
-    return match ? parseFloat(match[1]) : NaN;
-  }).filter(x => !isNaN(x));
-  const priceVals = data.map(item => {
-    if (!item.price) return NaN;
-    // Accept both plain numbers and euro-prefixed
-    let priceStr = String(item.price).replace(/,/g, '');
-    let match = priceStr.match(/([\d.]+)/);
-    return match ? parseFloat(match[1]) : NaN;
-  }).filter(x => !isNaN(x));
-  const areaMin = areaVals.length ? Math.min(...areaVals) : 0;
-  const areaMax = areaVals.length ? Math.max(...areaVals) : 0;
-  const priceMin = priceVals.length ? Math.min(...priceVals) : 0;
-  const priceMax = priceVals.length ? Math.max(...priceVals) : 0;
+  const areaVals = data.map(item => parseArea(item.size)).filter(x => !isNaN(x));
+  const priceVals = data.map(item => parsePrice(item.price)).filter(x => !isNaN(x));
+  const areaMin = areaVals.length ? areaVals.reduce((a, b) => Math.min(a, b)) : 0;
+  const areaMax = areaVals.length ? areaVals.reduce((a, b) => Math.max(a, b)) : 0;
+  const priceMin = priceVals.length ? priceVals.reduce((a, b) => Math.min(a, b)) : 0;
+  const priceMax = priceVals.length ? priceVals.reduce((a, b) => Math.max(a, b)) : 0;
 
   // Compute current filter values for placeholders
-  const areaMinVal = filters?.areaMin ?? areaMin;
-  const areaMaxVal = filters?.areaMax ?? areaMax;
-  const priceMinVal = filters?.priceMin ?? priceMin;
-  const priceMaxVal = filters?.priceMax ?? priceMax;
+  const areaMinVal = filterState?.areaMin ?? areaMin;
+  const areaMaxVal = filterState?.areaMax ?? areaMax;
+  const priceMinVal = filterState?.priceMin ?? priceMin;
+  const priceMaxVal = filterState?.priceMax ?? priceMax;
 
   filtersEl.innerHTML = `
     <form id="filterForm" class="filter-form">
@@ -275,15 +282,15 @@ function renderFilters(data) {
           ${areaMinVal === areaMin && areaMaxVal === areaMax ? `${areaMin}–${areaMax} m²` : `${areaMinVal}–${areaMaxVal} m²`} <span class="area-caret">▼</span>
         </button>
         <div id="areaPopover" class="area-popover" style="display:none;">
-          <div class="area-popover-fields" style="flex-direction:column;align-items:stretch;gap:6px;">
-            <div style="display:flex;justify-content:space-between;font-size:0.98em;margin-bottom:2px;gap:8px;">
-              <div style="display:flex;flex-direction:column;align-items:flex-start;width:50%;min-width:0;">
+          <div class="area-popover-fields popover-fields-col">
+            <div class="popover-minmax-row">
+              <div class="popover-field-col">
                 <span>Min:</span>
-                <input type="number" id="filterAreaMinInput" min="${areaMin}" max="${areaMax}" value="${areaMinVal}" style="width:90px;">
+                <input type="number" id="filterAreaMinInput" min="${areaMin}" max="${areaMax}" value="${areaMinVal}" class="popover-number-input">
               </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-start;width:50%;min-width:0;">
+              <div class="popover-field-col">
                 <span>Max:</span>
-                <input type="number" id="filterAreaMaxInput" min="${areaMin}" max="${areaMax}" value="${areaMaxVal}" style="width:90px;">
+                <input type="number" id="filterAreaMaxInput" min="${areaMin}" max="${areaMax}" value="${areaMaxVal}" class="popover-number-input">
               </div>
             </div>
           </div>
@@ -296,10 +303,16 @@ function renderFilters(data) {
           ${priceMinVal === priceMin && priceMaxVal === priceMax ? `€${priceMin}–€${priceMax}` : `€${priceMinVal}–€${priceMaxVal}`} <span class="price-caret">▼</span>
         </button>
         <div id="pricePopover" class="price-popover" style="display:none;">
-          <div class="price-popover-fields" style="flex-direction:column;align-items:stretch;gap:10px;">
-            <div style="display:flex;justify-content:space-between;font-size:0.98em;margin-bottom:2px;">
-              <span>Min: <input type="number" id="filterPriceMinInput" min="${priceMin}" max="${priceMax}" value="${priceMinVal}" style="width:90px;"></span>
-              <span>Max: <input type="number" id="filterPriceMaxInput" min="${priceMin}" max="${priceMax}" value="${priceMaxVal}" style="width:90px;"></span>
+          <div class="price-popover-fields popover-fields-col">
+            <div class="popover-minmax-row">
+              <div class="popover-field-col">
+                <span>Min:</span>
+                <input type="number" id="filterPriceMinInput" min="${priceMin}" max="${priceMax}" value="${priceMinVal}" class="popover-number-input">
+              </div>
+              <div class="popover-field-col">
+                <span>Max:</span>
+                <input type="number" id="filterPriceMaxInput" min="${priceMin}" max="${priceMax}" value="${priceMaxVal}" class="popover-number-input">
+              </div>
             </div>
           </div>
           <button type="button" id="priceApplyBtn" class="price-apply-btn">Apply</button>
@@ -339,7 +352,7 @@ function renderFilters(data) {
     if (!pricePopover.contains(e.target) && e.target !== priceDropdownBtn) {
       pricePopover.style.display = 'none';
     }
-  });
+  }, { signal });
   // Text input logic for area and price
   const areaMinInput = document.getElementById('filterAreaMinInput');
   const areaMaxInput = document.getElementById('filterAreaMaxInput');
@@ -351,8 +364,7 @@ function renderFilters(data) {
   if (form) {
     form.addEventListener('reset', (e) => {
       setTimeout(() => {
-        // Reset filters object and force full filter UI re-render
-        filters = {};
+        filterState = {};
         renderFilters(allListings);
         renderListings(allListings);
       }, 0);
@@ -361,54 +373,37 @@ function renderFilters(data) {
 }
 
 function applyFilters() {
-  let areaMinVal = parseFloat(document.getElementById('filterAreaMinInput')?.value);
-  let areaMaxVal = parseFloat(document.getElementById('filterAreaMaxInput')?.value);
+  const areaMinVal = parseFloat(document.getElementById('filterAreaMinInput')?.value);
+  const areaMaxVal = parseFloat(document.getElementById('filterAreaMaxInput')?.value);
   const locVal = document.getElementById('filterLocation').value;
-  let priceMinVal = parseFloat(document.getElementById('filterPriceMinInput')?.value);
-  let priceMaxVal = parseFloat(document.getElementById('filterPriceMaxInput')?.value);
-  filteredListings = allListings.filter(item => {
-    // Parse area (e.g. "10703 m²", "1,234.56 m²", "1.234,56 m²") robustly
-    let areaNum = NaN;
-    if (item.size) {
-      // Extract the first valid number (integer or decimal, with optional comma or dot)
-      let areaStr = item.size.replace(/[^\d.,]/g, '');
-      // If both , and . exist, assume . is thousand and , is decimal (European style)
-      if (areaStr.includes(',') && areaStr.includes('.')) {
-        areaStr = areaStr.replace(/\./g, '').replace(/,/g, '.');
-      } else {
-        areaStr = areaStr.replace(/,/g, '');
-      }
-      const match = areaStr.match(/([\d.]+)/);
-      if (match) areaNum = parseFloat(match[1]);
-    }
-    // If areaNum is not a valid number, exclude this listing
-    if (isNaN(areaNum)) return false;
-    // Parse price (handles both "112970" and "€112,970")
-    let priceNum = Infinity;
-    if (item.price) {
-      let priceStr = String(item.price).replace(/,/g, '');
-      let match = priceStr.match(/([\d.]+)/);
-      if (match) priceNum = parseFloat(match[1]);
-    }
-    const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
-    const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
-    const locOk = !locVal || item.location === locVal;
-    // Attach parsed values for sorting
-    item._areaNum = areaNum;
-    item._priceNum = priceNum;
-    return areaOk && priceOk && locOk;
-  });
-  // Sorting
+  const priceMinVal = parseFloat(document.getElementById('filterPriceMinInput')?.value);
+  const priceMaxVal = parseFloat(document.getElementById('filterPriceMaxInput')?.value);
   const sortVal = document.getElementById('sortSelect')?.value || '';
-  if (sortVal === 'size-asc') {
-    filteredListings.sort((a, b) => a._areaNum - b._areaNum);
-  } else if (sortVal === 'size-desc') {
-    filteredListings.sort((a, b) => b._areaNum - a._areaNum);
-  } else if (sortVal === 'price-asc') {
-    filteredListings.sort((a, b) => a._priceNum - b._priceNum);
-  } else if (sortVal === 'price-desc') {
-    filteredListings.sort((a, b) => b._priceNum - a._priceNum);
-  }
+
+  const withParsed = allListings.map(item => {
+    const areaNum = parseArea(item.size);
+    const rawPrice = parsePrice(item.price);
+    const priceNum = Number.isFinite(rawPrice) ? rawPrice : Infinity;
+    return { item, areaNum, priceNum };
+  });
+
+  filteredListings = withParsed
+    .filter(({ item, areaNum, priceNum }) => {
+      if (isNaN(areaNum)) return false;
+      const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
+      const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
+      const locOk = !locVal || item.location === locVal;
+      return areaOk && priceOk && locOk;
+    })
+    .sort((a, b) => {
+      if (sortVal === 'size-asc') return a.areaNum - b.areaNum;
+      if (sortVal === 'size-desc') return b.areaNum - a.areaNum;
+      if (sortVal === 'price-asc') return a.priceNum - b.priceNum;
+      if (sortVal === 'price-desc') return b.priceNum - a.priceNum;
+      return 0;
+    })
+    .map(({ item }) => item);
+
   renderListings(filteredListings);
 }
 
@@ -419,8 +414,8 @@ function renderHeroStats(data) {
   const available = data.filter(x => x.status === 'Available').length;
   const pending = data.filter(x => x.status === 'Pending').length;
   const withDeeds = data.filter(x => x.titleDeed === 'Yes' || x.titleDeed === true).length;
-  const iconPlots = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#fff" stroke-width="2" fill="none"/><path d="M3 9h14M9 3v14" stroke="#fff" stroke-width="1.5"/></svg>`;
-  const iconPin = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M10 18s6-6.5 6-10A6 6 0 1 0 4 8c0 3.5 6 10 6 10z" stroke="#fff" stroke-width="2" fill="none"/><circle cx="10" cy="8" r="2" stroke="#fff" stroke-width="1.5"/></svg>`;
+  const iconPlots = svgArea('#fff');
+  const iconPin = svgLocation('#fff');
   const iconCheck = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M4 10.5l4.5 4.5 7.5-9" stroke="#6de06d" stroke-width="2.2" fill="none"/></svg>`;
   const iconClock = `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><circle cx="10" cy="10" r="8" stroke="#f5c842" stroke-width="2"/><path d="M10 6v4l3 2" stroke="#f5c842" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   statsEl.innerHTML = `
@@ -474,7 +469,7 @@ function renderListings(data){
     card.className = 'card';
     card.innerHTML = `
       <div class="card-status-sticker">${escapeHtml(item.status || '')}</div>
-      <img src="${escapeAttr(item.image)}" alt="${escapeAttr(item.imageAlt || item.title)}" loading="lazy" />
+      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" />
       <div class="card-body">
         <h3 class="card-title">${escapeHtml(item.title)}</h3>
         <div class="card-meta">
@@ -485,9 +480,9 @@ function renderListings(data){
           <span class="icon-attr">${svgLocation()}</span> <span>${escapeHtml(item.location)}</span>
         </div>
         <div class="card-desc">${escapeHtml(item.shortDescription)}</div>
-        <div class="card-actions" style="display:flex;align-items:center;justify-content:space-between;">
-          <button class="button" data-id="${escapeAttr(item.id)}">View details</button>
-          ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" title="View on Google Maps" style="margin-left:auto;display:inline-block;text-decoration:none;vertical-align:middle;"><span style="font-size:1.7em;">📌</span></a>` : ''}
+        <div class="card-actions">
+          <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
+          ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" title="View on Google Maps" class="map-pin-link"><span class="map-pin-icon">📌</span></a>` : ''}
         </div>
       </div>
     `;
@@ -499,16 +494,6 @@ function renderListings(data){
 }
 
 function openModal(item){
-  // SVG for Title Deed (document icon)
-  function svgTitleDeed() {
-    return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="4" y="3" width="12" height="14" rx="2" stroke="#2b7a2b" stroke-width="2" fill="#fff"/><path d="M7 7h6M7 10h6M7 13h4" stroke="#2b7a2b" stroke-width="1.5"/></svg>`;
-  }
-  // SVG for green checkmark (no box)
-  function svgTick(checked) {
-    return checked
-      ? `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M5 10.5l4 4 6-8" stroke="#2b7a2b" stroke-width="2.5" fill="none"/></svg>`
-      : '';
-  }
   modalTitle.textContent = item.title;
   modalImage.src = item.image;
   modalImage.alt = item.imageAlt || item.title;
@@ -525,58 +510,35 @@ function openModal(item){
   // Attach PDF export event listener (ensure button exists)
   const pdfBtn = document.getElementById('downloadPdfBtn');
   if (pdfBtn && window.html2canvas && window.jspdf) {
-    // Remove any previous click handler
-    pdfBtn.replaceWith(pdfBtn.cloneNode(true));
-    const newPdfBtn = document.getElementById('downloadPdfBtn');
-    newPdfBtn.onclick = async function() {
-      newPdfBtn.style.display = 'none';
-      // Wait a tick to ensure button is hidden
+    pdfBtn.onclick = async function() {
+      pdfBtn.style.display = 'none';
       await new Promise(r => setTimeout(r, 100));
       const modalContent = document.querySelector('.modal-content');
-      if (!modalContent) return;
+      if (!modalContent) { pdfBtn.style.display = ''; return; }
       html2canvas(modalContent, { scale: 2, useCORS: true }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
-        // Calculate image size to fit A4
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         let imgWidth = canvas.width;
         let imgHeight = canvas.height;
-        // Scale to fit width
         if (imgWidth > pageWidth) {
           imgHeight = imgHeight * (pageWidth / imgWidth);
           imgWidth = pageWidth;
         }
-        // If still too tall, scale to fit height
         if (imgHeight > pageHeight) {
           imgWidth = imgWidth * (pageHeight / imgHeight);
           imgHeight = pageHeight;
         }
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
         pdf.save((modalTitle.textContent || 'listing') + '.pdf');
-        newPdfBtn.style.display = '';
+        pdfBtn.style.display = '';
+      }).catch(err => {
+        console.error('PDF export failed', err);
+        pdfBtn.style.display = '';
       });
     };
   }
-  // SVG for phone icon
-  function svgPhone() {
-    return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="5" y="2" width="10" height="16" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="#2b7a2b"/></svg>`;
-  }
-
-  /*
-  // Update modalMap link if coordinates are available
-  if(item.latitude && item.longitude){
-  modalMap.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}`;
-  modalMap.innerHTML = `<span style="font-size:28px;">📌</span>`;
-  modalMap.style.textDecoration = 'none';
-  modalMap.style.display = 'inline-block';
-  } else {
-    modalMap.style.display = 'none';
-  }
-  */
-
-  // Always hide modalMap (Google Maps pin/link) in the modal
-  modalMap.style.display = 'none';
 
   modal.setAttribute('aria-hidden', 'false');
   // trap focus briefly (basic)
@@ -607,7 +569,5 @@ function escapeHtml(str){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
-function escapeAttr(s){ return escapeHtml(s); }
-
 loadListings();
 
