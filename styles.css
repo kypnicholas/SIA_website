@@ -125,6 +125,25 @@
   z-index: 3;
   pointer-events: none;
 }
+/* Status-specific badge colours */
+.card-status-sticker--available {
+  background: #e8f5e9;
+  color: #1b5e20;
+  box-shadow: 0 1.2px 4px rgba(44,122,44,0.12), 2px 2px 0 0 #a5d6a7 inset;
+}
+.card-status-sticker--available::after { background: #a5d6a7; }
+.card-status-sticker--pending {
+  background: #fff8e1;
+  color: #b86c00;
+  box-shadow: 0 1.2px 4px rgba(180,120,0,0.12), 2px 2px 0 0 #ffd54f inset;
+}
+.card-status-sticker--pending::after { background: #ffd54f; }
+.card-status-sticker--sold {
+  background: #f5f5f5;
+  color: #555;
+  box-shadow: 0 1.2px 4px rgba(0,0,0,0.10), 2px 2px 0 0 #bdbdbd inset;
+}
+.card-status-sticker--sold::after { background: #bdbdbd; }
 .card {
   position: relative;
 }
@@ -503,6 +522,8 @@ body{
 
 
 .site-header{
+  /* Once you have header_long.webp, replace the url() below with:
+     image-set(url('website_images/header_long.webp') type('image/webp'), url('website_images/header_long.png') type('image/png')) */
   background: url('website_images/header_long.png') center center/cover no-repeat;
   color: #fff;
   padding-top: 56px;
@@ -638,6 +659,28 @@ body{
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #225722;
+}
+.contact-actions {
+  margin-top: 10px;
+}
+.whatsapp-btn {
+  background: #25d366;
+  color: #fff;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(37,211,102,0.18);
+}
+.whatsapp-btn:hover {
+  background: #1da851;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.28);
 }
 .contact h2::before {
   content: '';

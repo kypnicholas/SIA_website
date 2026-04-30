@@ -495,12 +495,13 @@ async function loadListings(){
   showSkeleton();        // show shimmer cards immediately while fetch is in-flight
   readFiltersFromURL();  // restore any filter state from the URL before rendering
   try{
-    const res = await fetch('listings.json', {cache: "no-cache"});
+    const res = await fetch('listings.json', {cache: "default"});
     if(!res.ok) throw new Error('Failed to load listings.json');
     const data = await res.json();
     allListings = data;
     renderHeroStats(data);
     renderFilters(data);
+    injectListingsSchema(data);
     // If URL params were present, apply them now; otherwise show all listings
     if (Object.keys(filterState).length > 0) {
       applyFilters();
@@ -511,6 +512,45 @@ async function loadListings(){
     listingsEl.innerHTML = `<p class="error">Unable to load listings. (${err.message})</p>`;
     console.error(err);
   }
+}
+
+function injectListingsSchema(data) {
+  const availabilityMap = {
+    'available': 'https://schema.org/InStock',
+    'pending':   'https://schema.org/LimitedAvailability',
+    'sold':      'https://schema.org/SoldOut'
+  };
+  const items = data.map((item, i) => ({
+    '@type': 'ListItem',
+    'position': i + 1,
+    'item': {
+      '@type': 'Product',
+      'name': item.title,
+      'description': item.description || item.shortDescription || '',
+      'image': item.image,
+      'offers': {
+        '@type': 'Offer',
+        'price': parsePrice(item.price),
+        'priceCurrency': 'EUR',
+        'availability': availabilityMap[(item.status || '').toLowerCase()] || 'https://schema.org/InStock'
+      }
+    }
+  }));
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    'name': 'Agricultural Plots for Sale — Sia, Nicosia, Cyprus',
+    'numberOfItems': data.length,
+    'itemListElement': items
+  };
+  let el = document.getElementById('listings-schema');
+  if (!el) {
+    el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = 'listings-schema';
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(schema);
 }
 
 function renderListings(data){
@@ -539,8 +579,8 @@ function renderListings(data){
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
-      <div class="card-status-sticker">${escapeHtml(item.status || '')}</div>
-      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" />
+      <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
+      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
       <div class="card-body">
         <h3 class="card-title">${escapeHtml(item.title)}</h3>
         <div class="card-meta">
