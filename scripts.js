@@ -37,7 +37,10 @@ const modalTitle = document.getElementById('modalTitle');
 const modalImage = document.getElementById('modalImage');
 const modalDesc = document.getElementById('modalDesc');
 const modalDetails = document.getElementById('modalDetails');
+const modalActions = document.getElementById('modalActions');
 const yearEl = document.getElementById('year');
+const DEFAULT_CONTACT_EMAIL = 'kypmaria@cytanet.com.cy';
+const DEFAULT_CONTACT_PHONE = '35799697061';
 
 yearEl.textContent = new Date().getFullYear();
 
@@ -54,6 +57,12 @@ function svgLocation(color = '#2b7a2b') {
 }
 function svgContact() {
   return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="3" y="5" width="14" height="10" rx="2" stroke="#2b7a2b" stroke-width="2" fill="none"/><path d="M3 5l7 6 7-6" stroke="#2b7a2b" stroke-width="1.5" fill="none"/></svg>`;
+}
+function svgMailMini() {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 5l7 5.5L17 5" stroke="currentColor" stroke-width="1.7"/></svg>`;
+}
+function svgWhatsAppMini() {
+  return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2.2C5.69 2.2 2.2 5.62 2.2 9.85c0 1.53.47 2.95 1.28 4.14l-.83 3.81 3.93-.79A7.9 7.9 0 0 0 10 17.5c4.31 0 7.8-3.42 7.8-7.65S14.31 2.2 10 2.2z" stroke="currentColor" stroke-width="1.6"/><path d="M7.15 7.22c.14-.3.3-.31.45-.31h.39c.12 0 .29.04.43.34.14.31.47 1.14.51 1.22.04.08.07.18.01.29-.06.11-.09.18-.18.28-.09.1-.19.22-.27.29-.09.08-.18.16-.08.31.1.15.45.74.96 1.2.66.59 1.2.77 1.38.85.18.08.29.07.4-.04.11-.11.47-.52.59-.7.12-.18.24-.15.41-.09.17.06 1.08.5 1.27.59.18.09.3.14.34.22.04.08.04.47-.11.93-.15.45-.85.88-1.18.93-.3.05-.67.07-1.08-.06a5.94 5.94 0 0 1-1.11-.52c-1.88-1.07-3.1-3.05-3.2-3.18-.1-.13-.77-1.01-.77-1.93 0-.92.48-1.37.65-1.56z" fill="currentColor"/></svg>`;
 }
 function svgNotes() {
   return `<svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><path d="M15.232 5.232l-10 10V17h1.768l10-10-1.768-1.768zM17.414 3.414a2 2 0 0 0-2.828 0l-1.172 1.172 2.828 2.828 1.172-1.172a2 2 0 0 0 0-2.828z" stroke="#2b7a2b" stroke-width="1.5" fill="#fff"/></svg>`;
@@ -86,6 +95,47 @@ function parsePrice(priceStr) {
   const str = String(priceStr).replace(/,/g, '');
   const match = str.match(/([\d.]+)/);
   return match ? parseFloat(match[1]) : NaN;
+}
+
+function normalizeWhatsAppPhone(phoneRaw) {
+  const digits = String(phoneRaw || '').replace(/\D/g, '');
+  if (!digits) return DEFAULT_CONTACT_PHONE;
+  if (digits.startsWith('00')) return digits.slice(2);
+  if (digits.startsWith('357')) return digits;
+  if (digits.length === 8) return `357${digits}`;
+  if (digits.length === 9 && digits.startsWith('0')) return `357${digits.slice(1)}`;
+  return digits;
+}
+
+function buildEnquiryLinks(item) {
+  const listingId = item.id || 'N/A';
+  const listingTitle = item.title || 'Agricultural plot';
+  const listingLocation = item.location || 'N/A';
+  const listingSize = item.size || 'N/A';
+  const listingPrice = item.price ? `€${item.price}` : 'N/A';
+  const email = item.contactEmail || DEFAULT_CONTACT_EMAIL;
+  const waPhone = normalizeWhatsAppPhone(item.contactPhone);
+
+  const subject = `Enquiry: ${listingTitle} (${listingId})`;
+  const message = [
+    'Hello,',
+    '',
+    'I am interested in this listing:',
+    `- Title: ${listingTitle}`,
+    `- Listing ID: ${listingId}`,
+    `- Location: ${listingLocation}`,
+    `- Size: ${listingSize}`,
+    `- Price: ${listingPrice}`,
+    '',
+    'Please share the next steps and current availability.',
+    '',
+    'Thank you.'
+  ].join('\n');
+
+  return {
+    mailtoHref: `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
+    whatsappHref: `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`
+  };
 }
 
 function normalizeSearchText(value) {
@@ -678,6 +728,7 @@ function renderListings(data){
   }
   listingsEl.innerHTML = '';
   data.forEach(item => {
+    const enquiry = buildEnquiryLinks(item);
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
@@ -695,7 +746,11 @@ function renderListings(data){
         <div class="card-desc">${escapeHtml(item.shortDescription)}</div>
         <div class="card-actions">
           <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
-          ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" title="View on Google Maps" class="map-pin-link"><span class="map-pin-icon">📌</span></a>` : ''}
+          <div class="card-quick-actions">
+            <a href="${escapeHtml(enquiry.mailtoHref)}" class="button button-secondary button-compact button-with-icon" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}"><span class="cta-icon">${svgMailMini()}</span><span class="cta-label-desktop">Email</span><span class="cta-label-mobile">Mail</span></a>
+            <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-compact button-with-icon" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}"><span class="cta-icon">${svgWhatsAppMini()}</span><span class="cta-label-desktop">WhatsApp</span><span class="cta-label-mobile">WA</span></a>
+            ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" rel="noopener noreferrer" title="View on Google Maps" class="map-pin-link"><span class="map-pin-icon">📌</span></a>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -711,6 +766,7 @@ function renderListings(data){
 }
 
 function openModal(item){
+  const enquiry = buildEnquiryLinks(item);
   modalTitle.textContent = item.title;
   modalImage.src = item.image;
   modalImage.alt = item.imageAlt || item.title;
@@ -722,8 +778,14 @@ function openModal(item){
   <li><span class="icon-attr" title="Title Deeds">${svgTitleDeed()}</span> Title deeds available ${svgTick(item.titleDeed === 'Yes' || item.titleDeed === true)}</li>
     <li><span class="icon-attr" title="Notes">${svgNotes()}</span> ${escapeHtml(item.notes || '—')}</li>
     <li><span class="icon-attr" title="Telephone">${svgPhone()}</span> <a href="tel:${escapeHtml(item.contactPhone || '')}">${escapeHtml(item.contactPhone || '—')}</a></li>
-    <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || 'kypmaria@cytanet.com.cy')}">${escapeHtml(item.contactEmail || '—')}</a></li>
+    <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || DEFAULT_CONTACT_EMAIL)}">${escapeHtml(item.contactEmail || DEFAULT_CONTACT_EMAIL)}</a></li>
   `;
+  if (modalActions) {
+    modalActions.innerHTML = `
+      <a href="${escapeHtml(enquiry.mailtoHref)}" class="button button-secondary button-with-icon"><span class="cta-icon">${svgMailMini()}</span>Email This Plot</a>
+      <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-with-icon"><span class="cta-icon">${svgWhatsAppMini()}</span>WhatsApp This Plot</a>
+    `;
+  }
   // Attach PDF export event listener (ensure button exists)
   const pdfBtn = document.getElementById('downloadPdfBtn');
   if (pdfBtn && window.html2canvas && window.jspdf) {
