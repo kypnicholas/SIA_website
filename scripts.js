@@ -88,6 +88,106 @@ function parsePrice(priceStr) {
   return match ? parseFloat(match[1]) : NaN;
 }
 
+function normalizeSearchText(value) {
+  if (value == null) return '';
+  return String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildSearchIndex(item) {
+  const hasTitleDeed = item.titleDeed === 'Yes' || item.titleDeed === true;
+  const titleDeedTerms = hasTitleDeed
+    ? 'title deed yes available'
+    : 'title deed no unavailable';
+
+  return normalizeSearchText([
+    item.id,
+    item.title,
+    item.shortDescription,
+    item.description,
+    item.location,
+    item.notes,
+    item.status,
+    item.size,
+    item.price,
+    `€${item.price || ''}`,
+    item.contactEmail,
+    item.contactPhone,
+    item.latitude,
+    item.longitude,
+    titleDeedTerms
+  ].filter(Boolean).join(' '));
+}
+
+function buildSearchWords(searchIndex) {
+  return Array.from(new Set(
+    searchIndex
+      .split(' ')
+      .map(word => word.trim())
+      .filter(word => word.length >= 2)
+  ));
+}
+
+function getTokenMaxDistance(token) {
+  if (token.length <= 4) return 1;
+  if (token.length <= 8) return 2;
+  return 3;
+}
+
+function levenshteinWithin(a, b, maxDistance) {
+  if (Math.abs(a.length - b.length) > maxDistance) return false;
+  if (a === b) return true;
+
+  const prev = new Array(b.length + 1);
+  const curr = new Array(b.length + 1);
+
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    let minInRow = curr[0];
+
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(
+        prev[j] + 1,
+        curr[j - 1] + 1,
+        prev[j - 1] + cost
+      );
+      if (curr[j] < minInRow) minInRow = curr[j];
+    }
+
+    if (minInRow > maxDistance) return false;
+
+    for (let j = 0; j <= b.length; j++) prev[j] = curr[j];
+  }
+
+  return prev[b.length] <= maxDistance;
+}
+
+function tokenMatchesSearchData(token, searchIndex, searchWords) {
+  if (!token) return true;
+
+  // Keep numeric/id-like queries strict to avoid surprising matches.
+  if (/\d/.test(token)) return searchIndex.includes(token);
+
+  if (searchIndex.includes(token)) return true;
+  if (token.length <= 3) return false;
+
+  const maxDistance = getTokenMaxDistance(token);
+
+  for (const word of searchWords) {
+    if (Math.abs(word.length - token.length) > maxDistance) continue;
+    if (levenshteinWithin(token, word, maxDistance)) return true;
+  }
+
+  return false;
+}
+
 // Persist filter state in the URL so links can be shared / bookmarked
 function readFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
@@ -310,7 +410,7 @@ function renderFilters(data) {
     <form id="filterForm" class="filter-form">
       <div class="search-group">
         <label for="filterSearch">Search:</label>
-        <input type="text" id="filterSearch" class="search-input" placeholder="Title or description…" value="${escapeHtml(filterState?.search || '')}">
+        <input type="text" id="filterSearch" class="search-input" placeholder="Title, location, zone, notes, ID..." value="${escapeHtml(filterState?.search || '')}">
       </div>
       <label>
         Location:
@@ -438,24 +538,26 @@ function applyFilters() {
   const priceMinVal = parseFloat(document.getElementById('filterPriceMinInput')?.value);
   const priceMaxVal = parseFloat(document.getElementById('filterPriceMaxInput')?.value);
   const sortVal = document.getElementById('sortSelect')?.value || '';
-  const searchVal = (filterState.search || '').trim().toLowerCase();
+  const searchQuery = normalizeSearchText(filterState.search || '');
+  const searchTokens = searchQuery ? searchQuery.split(' ').filter(Boolean) : [];
 
   const withParsed = allListings.map(item => {
     const areaNum = parseArea(item.size);
     const rawPrice = parsePrice(item.price);
     const priceNum = Number.isFinite(rawPrice) ? rawPrice : Infinity;
-    return { item, areaNum, priceNum };
+    const searchIndex = buildSearchIndex(item);
+    const searchWords = buildSearchWords(searchIndex);
+    return { item, areaNum, priceNum, searchIndex, searchWords };
   });
 
   filteredListings = withParsed
-    .filter(({ item, areaNum, priceNum }) => {
+    .filter(({ item, areaNum, priceNum, searchIndex, searchWords }) => {
       if (isNaN(areaNum)) return false;
       const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
       const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
       const locOk = !locVal || item.location === locVal;
-      const searchOk = !searchVal ||
-        (item.title || '').toLowerCase().includes(searchVal) ||
-        (item.shortDescription || '').toLowerCase().includes(searchVal);
+      const searchOk = !searchTokens.length ||
+        searchTokens.every(token => tokenMatchesSearchData(token, searchIndex, searchWords));
       return areaOk && priceOk && locOk && searchOk;
     })
     .sort((a, b) => {
