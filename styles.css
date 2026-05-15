@@ -77,6 +77,24 @@
   position: relative;
   z-index: 3;
 }
+
+/* Hero-specific quality summary styling (placed inside #heroStats) */
+.hero-quality-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+.hero-quality-summary .quality-summary-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.hero-quality-summary .quality-summary-counts { display:flex; gap:8px; align-items:center; }
 .hero-stat {
   display: inline-flex;
   align-items: center;
@@ -668,6 +686,20 @@ body{
 }
 
 .card-title{font-weight:600;margin:0 0 6px}
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-title-row .card-title {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: 1rem;
+}
+.card-title-row .quality-chip-wrap {
+  margin: 0 0 0 8px;
+}
 .quality-chip-wrap {
   position: relative;
   display: inline-block;
@@ -691,7 +723,7 @@ body{
   position: fixed;
   top: -9999px;
   left: -9999px;
-  z-index: 980;
+  z-index: 1200;
   width: min(360px, calc(100vw - 80px));
   background: #ffffff;
   border: 1px solid #d4dfd4;
@@ -1073,5 +1105,26 @@ body{
     bottom: 8px !important;
     padding: 12px;
     max-height: min(70vh, 520px);
+  }
+  /* Ensure the quality summary is visible and touch-friendly on narrow screens */
+  .quality-summary {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    margin: 8px 0 12px;
+    position: sticky;
+    top: 56px;
+    z-index: 1100;
+    background: #f7fbf7;
+  }
+  .quality-pill {
+    padding: 6px 10px;
+    font-size: 0.86rem;
+  }
+  .quality-chip {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    touch-action: manipulation;
   }
 }

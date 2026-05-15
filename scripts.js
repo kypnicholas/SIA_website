@@ -505,11 +505,20 @@ function getListingQuality(item) {
 }
 
 function renderQualitySummary(data) {
-  if (!qualitySummaryEl) return;
+  // Move the summary into the hero area for higher visibility.
+  const hero = document.getElementById('heroStats');
 
-  if (!Array.isArray(data) || data.length === 0) {
+  // Keep the legacy `qualitySummaryEl` hidden as a fallback.
+  if (qualitySummaryEl) {
     qualitySummaryEl.style.display = 'none';
     qualitySummaryEl.innerHTML = '';
+  }
+
+  if (!Array.isArray(data) || data.length === 0) {
+    if (hero) {
+      const existing = hero.querySelector('.hero-quality-summary');
+      if (existing) existing.remove();
+    }
     return;
   }
 
@@ -524,15 +533,22 @@ function renderQualitySummary(data) {
     else caution += 1;
   });
 
-  qualitySummaryEl.style.display = 'flex';
-  qualitySummaryEl.innerHTML = `
-    <span class="quality-summary-label">Listing data trust checks (${data.length})</span>
-    <div class="quality-summary-counts">
-      <span class="quality-pill quality-pill--verified">${verified} verified</span>
-      <span class="quality-pill quality-pill--review">${review} needs review</span>
-      <span class="quality-pill quality-pill--caution">${caution} check details</span>
+  const summaryHtml = `
+    <div class="hero-quality-summary" role="group" aria-label="Listing data trust checks">
+      <span class="quality-summary-label">Listing data trust checks (${data.length})</span>
+      <div class="quality-summary-counts">
+        <span class="quality-pill quality-pill--verified">${verified} verified</span>
+        <span class="quality-pill quality-pill--review">${review} needs review</span>
+        <span class="quality-pill quality-pill--caution">${caution} check details</span>
+      </div>
     </div>
   `;
+
+  if (hero) {
+    const existing = hero.querySelector('.hero-quality-summary');
+    if (existing) existing.outerHTML = summaryHtml;
+    else hero.insertAdjacentHTML('beforeend', summaryHtml);
+  }
 }
 
 function normalizeWhatsAppPhone(phoneRaw) {
@@ -1183,9 +1199,11 @@ function renderListings(data){
       <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
       <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
       <div class="card-body">
-        <h3 class="card-title">${escapeHtml(item.title)}</h3>
-        <div class="quality-chip-wrap">
-          <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false">${escapeHtml(quality.label)}</button>
+        <div class="card-title-row">
+          <h3 class="card-title">${escapeHtml(item.title)}</h3>
+          <div class="quality-chip-wrap card-title-quality">
+            <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false">${escapeHtml(quality.label)}</button>
+          </div>
         </div>
         <div class="card-meta">
           <span class="icon-attr">${svgArea()}</span> ${escapeHtml(item.size)}
