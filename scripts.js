@@ -28,9 +28,16 @@ let filterState = {};
 let popoverAbortController = null;
 let focusTrapAbortController = null;
 let modalTriggerEl = null;
+let listingQualityById = new Map();
+const qualityTooltipContentById = new Map();
+let qualityTooltipPortalEl = null;
+let qualityTooltipActiveTrigger = null;
+let qualityTooltipCloseTimer = null;
+let qualityTooltipHandlersBound = false;
 const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='170' viewBox='0 0 400 170'%3E%3Crect width='400' height='170' fill='%23f4faf4'/%3E%3Ctext x='200' y='90' text-anchor='middle' fill='%23b2dcb2' font-size='14' font-family='system-ui'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
+const qualitySummaryEl = document.getElementById('qualitySummary');
 const modal = document.getElementById('modal');
 const modalClose = document.getElementById('modalClose');
 const modalTitle = document.getElementById('modalTitle');
@@ -95,6 +102,437 @@ function parsePrice(priceStr) {
   const str = String(priceStr).replace(/,/g, '');
   const match = str.match(/([\d.]+)/);
   return match ? parseFloat(match[1]) : NaN;
+}
+
+function isValidEmail(email) {
+  if (!email) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
+function issue(severity, message) {
+  return { severity, message };
+}
+
+function qualityCheck(label, status, detail = '') {
+  return { label, status, detail };
+}
+
+function buildQualityTooltipPanel(quality) {
+  const summaryByLevel = {
+    verified: 'All automated checks passed. This listing looks consistent.',
+    review: 'Most checks passed, but a small number of details should be reviewed.',
+    caution: 'Important data checks failed or multiple warnings were detected. Please verify before deciding.'
+  };
+
+  const checksHtml = quality.checks.map(check => {
+    const statusLabel = check.status.toUpperCase();
+    const statusClass = check.status === 'pass' ? 'pass' : (check.status === 'warn' ? 'warn' : 'fail');
+    const detail = check.detail ? `: ${escapeHtml(check.detail)}` : '';
+    return `<li class="quality-tooltip-item"><span class="quality-tooltip-status quality-tooltip-status--${statusClass}">${statusLabel}</span><span class="quality-tooltip-text">${escapeHtml(check.label)}${detail}</span></li>`;
+  }).join('');
+
+  return `
+    <p class="quality-tooltip-title">Data Quality Checklist</p>
+    <p class="quality-tooltip-summary">${escapeHtml(summaryByLevel[quality.level] || summaryByLevel.review)}</p>
+    <ul class="quality-tooltip-list">${checksHtml}</ul>
+  `;
+}
+
+function isTouchInputMode() {
+  return window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+}
+
+function getOrCreateQualityTooltipPortal() {
+  if (qualityTooltipPortalEl) return qualityTooltipPortalEl;
+  qualityTooltipPortalEl = document.createElement('div');
+  qualityTooltipPortalEl.id = 'qualityTooltipPortal';
+  qualityTooltipPortalEl.className = 'quality-tooltip-panel quality-tooltip-portal';
+  qualityTooltipPortalEl.setAttribute('role', 'tooltip');
+  qualityTooltipPortalEl.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(qualityTooltipPortalEl);
+  return qualityTooltipPortalEl;
+}
+
+function clearQualityTooltipCloseTimer() {
+  if (qualityTooltipCloseTimer) {
+    clearTimeout(qualityTooltipCloseTimer);
+    qualityTooltipCloseTimer = null;
+  }
+}
+
+function hideQualityTooltipPortal() {
+  clearQualityTooltipCloseTimer();
+  const panel = getOrCreateQualityTooltipPortal();
+  panel.classList.remove('is-open');
+  panel.classList.remove('is-mobile-sheet');
+  panel.setAttribute('aria-hidden', 'true');
+  panel.dataset.sticky = 'false';
+  panel.style.left = '-9999px';
+  panel.style.top = '-9999px';
+  panel.style.right = 'auto';
+  panel.style.bottom = 'auto';
+  if (qualityTooltipActiveTrigger) {
+    qualityTooltipActiveTrigger.setAttribute('aria-expanded', 'false');
+    qualityTooltipActiveTrigger = null;
+  }
+}
+
+function scheduleHideQualityTooltipPortal(delay = 90) {
+  clearQualityTooltipCloseTimer();
+  qualityTooltipCloseTimer = setTimeout(() => {
+    hideQualityTooltipPortal();
+  }, delay);
+}
+
+function positionQualityTooltipPortal(trigger) {
+  const panel = getOrCreateQualityTooltipPortal();
+  const touchMode = isTouchInputMode();
+
+  if (touchMode) {
+    panel.classList.add('is-mobile-sheet');
+    panel.style.left = '12px';
+    panel.style.right = '12px';
+    panel.style.top = 'auto';
+    panel.style.bottom = '12px';
+    return;
+  }
+
+  panel.classList.remove('is-mobile-sheet');
+  panel.style.right = 'auto';
+  panel.style.bottom = 'auto';
+
+  const triggerRect = trigger.getBoundingClientRect();
+  const viewportMargin = 12;
+
+  panel.style.left = '-9999px';
+  panel.style.top = '-9999px';
+  const panelRect = panel.getBoundingClientRect();
+
+  let left = triggerRect.left;
+  if (left + panelRect.width > window.innerWidth - viewportMargin) {
+    left = window.innerWidth - panelRect.width - viewportMargin;
+  }
+  if (left < viewportMargin) left = viewportMargin;
+
+  let top = triggerRect.bottom + 8;
+  if (top + panelRect.height > window.innerHeight - viewportMargin) {
+    top = triggerRect.top - panelRect.height - 8;
+  }
+  if (top < viewportMargin) top = viewportMargin;
+
+  panel.style.left = `${Math.round(left)}px`;
+  panel.style.top = `${Math.round(top)}px`;
+}
+
+function showQualityTooltipPortal(trigger, sticky = false) {
+  const tooltipId = trigger.getAttribute('data-quality-tooltip-id');
+  const tooltipContent = qualityTooltipContentById.get(tooltipId);
+  if (!tooltipContent) return;
+
+  clearQualityTooltipCloseTimer();
+  const panel = getOrCreateQualityTooltipPortal();
+  panel.innerHTML = tooltipContent;
+  panel.dataset.sticky = sticky ? 'true' : 'false';
+  panel.classList.add('is-open');
+  panel.setAttribute('aria-hidden', 'false');
+
+  if (qualityTooltipActiveTrigger && qualityTooltipActiveTrigger !== trigger) {
+    qualityTooltipActiveTrigger.setAttribute('aria-expanded', 'false');
+  }
+  qualityTooltipActiveTrigger = trigger;
+  qualityTooltipActiveTrigger.setAttribute('aria-expanded', 'true');
+
+  positionQualityTooltipPortal(trigger);
+}
+
+function attachQualityTooltipTriggerListeners(trigger) {
+  trigger.addEventListener('mouseenter', () => {
+    if (isTouchInputMode()) return;
+    showQualityTooltipPortal(trigger, false);
+  });
+
+  trigger.addEventListener('mouseleave', (event) => {
+    if (isTouchInputMode()) return;
+    const panel = getOrCreateQualityTooltipPortal();
+    if (event.relatedTarget && panel.contains(event.relatedTarget)) return;
+    if (panel.dataset.sticky === 'true') return;
+    scheduleHideQualityTooltipPortal();
+  });
+
+  trigger.addEventListener('focus', () => {
+    showQualityTooltipPortal(trigger, true);
+  });
+
+  trigger.addEventListener('blur', () => {
+    if (isTouchInputMode()) return;
+    scheduleHideQualityTooltipPortal();
+  });
+
+  trigger.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (qualityTooltipActiveTrigger === trigger) {
+      hideQualityTooltipPortal();
+      return;
+    }
+    showQualityTooltipPortal(trigger, true);
+  });
+}
+
+function initQualityTooltipInteractions() {
+  if (qualityTooltipHandlersBound) return;
+  qualityTooltipHandlersBound = true;
+
+  const panel = getOrCreateQualityTooltipPortal();
+
+  panel.addEventListener('mouseenter', () => {
+    clearQualityTooltipCloseTimer();
+  });
+
+  panel.addEventListener('mouseleave', () => {
+    if (isTouchInputMode()) return;
+    if (panel.dataset.sticky === 'true') return;
+    scheduleHideQualityTooltipPortal();
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!qualityTooltipActiveTrigger) return;
+    const tooltipPanel = getOrCreateQualityTooltipPortal();
+    if (qualityTooltipActiveTrigger.contains(event.target) || tooltipPanel.contains(event.target)) return;
+    hideQualityTooltipPortal();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && qualityTooltipActiveTrigger) {
+      hideQualityTooltipPortal();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (qualityTooltipActiveTrigger) hideQualityTooltipPortal();
+  });
+
+  window.addEventListener('scroll', (event) => {
+    if (!qualityTooltipActiveTrigger) return;
+    const scrollTarget = event.target;
+    if (scrollTarget instanceof Node && panel.contains(scrollTarget)) return;
+    hideQualityTooltipPortal();
+  }, true);
+
+  panel.addEventListener('scroll', () => {
+    clearQualityTooltipCloseTimer();
+  }, { passive: true });
+}
+
+function evaluateListingQuality(item) {
+  const checks = [];
+
+  const requiredFields = [
+    ['id', 'Listing ID'],
+    ['title', 'Title'],
+    ['location', 'Location'],
+    ['size', 'Area'],
+    ['price', 'Price'],
+    ['status', 'Status'],
+    ['image', 'Image']
+  ];
+  const missingRequired = requiredFields
+    .filter(([field]) => !String(item[field] || '').trim())
+    .map(([, label]) => label);
+  checks.push(qualityCheck(
+    'Essential listing details are present',
+    missingRequired.length ? 'fail' : 'pass',
+    missingRequired.length ? `Missing: ${missingRequired.join(', ')}` : ''
+  ));
+
+  const hasDescription = String(item.description || '').trim().length >= 20;
+  checks.push(qualityCheck(
+    'Full plot description is available',
+    hasDescription ? 'pass' : 'warn',
+    hasDescription ? '' : 'Description missing or too short.'
+  ));
+
+  const hasShortDescription = String(item.shortDescription || '').trim().length >= 15;
+  checks.push(qualityCheck(
+    'Short card summary is available',
+    hasShortDescription ? 'pass' : 'warn',
+    hasShortDescription ? '' : 'Short description missing or too short.'
+  ));
+
+  const hasImageAlt = String(item.imageAlt || '').trim().length >= 6;
+  checks.push(qualityCheck(
+    'Image text description is set',
+    hasImageAlt ? 'pass' : 'warn',
+    hasImageAlt ? '' : 'Image alt text missing or very short.'
+  ));
+
+  const areaNum = parseArea(item.size);
+  const areaValid = Number.isFinite(areaNum) && areaNum > 0;
+  checks.push(qualityCheck(
+    'Area value format is valid',
+    areaValid ? 'pass' : 'fail',
+    areaValid ? '' : 'Area is not a valid positive number.'
+  ));
+  const areaInExpectedRange = areaValid && areaNum <= 500000;
+  checks.push(qualityCheck(
+    'Area looks realistic',
+    !areaValid ? 'fail' : (areaInExpectedRange ? 'pass' : 'warn'),
+    !areaValid ? 'Cannot assess plausibility due to invalid area.' : (areaInExpectedRange ? '' : 'Area is unusually large; please confirm units (m²).')
+  ));
+
+  const priceNum = parsePrice(item.price);
+  const priceValid = Number.isFinite(priceNum) && priceNum > 0;
+  checks.push(qualityCheck(
+    'Price value format is valid',
+    priceValid ? 'pass' : 'fail',
+    priceValid ? '' : 'Price is not a valid positive number.'
+  ));
+  const priceInExpectedRange = priceValid && priceNum <= 50000000;
+  checks.push(qualityCheck(
+    'Price looks realistic',
+    !priceValid ? 'fail' : (priceInExpectedRange ? 'pass' : 'warn'),
+    !priceValid ? 'Cannot assess plausibility due to invalid price.' : (priceInExpectedRange ? '' : 'Price is unusually high; please verify source data.')
+  ));
+
+  let unitPrice = NaN;
+  if (areaValid && priceValid) unitPrice = priceNum / areaNum;
+  const unitPriceOk = Number.isFinite(unitPrice) && unitPrice >= 2 && unitPrice <= 120;
+  checks.push(qualityCheck(
+    'Price per m² is in expected range',
+    !Number.isFinite(unitPrice) ? 'fail' : (unitPriceOk ? 'pass' : 'warn'),
+    !Number.isFinite(unitPrice) ? 'Cannot calculate price per m².' : (unitPriceOk ? '' : `Unusual value (${unitPrice.toFixed(2)} EUR/m²).`)
+  ));
+
+  const statusNorm = String(item.status || '').trim().toLowerCase();
+  const statusOk = ['available', 'pending', 'sold'].includes(statusNorm);
+  checks.push(qualityCheck(
+    'Availability status uses standard values',
+    statusOk ? 'pass' : 'warn',
+    statusOk ? '' : 'Status should be Available, Pending, or Sold.'
+  ));
+
+  const hasLat = item.latitude !== '' && item.latitude != null;
+  const hasLng = item.longitude !== '' && item.longitude != null;
+  const coordinatePairComplete = hasLat === hasLng;
+  checks.push(qualityCheck(
+    'Map coordinates are complete (lat + lng)',
+    coordinatePairComplete ? 'pass' : 'fail',
+    coordinatePairComplete ? '' : 'Latitude/longitude pair is incomplete.'
+  ));
+
+  const coordinatesProvided = hasLat && hasLng;
+  const lat = Number(item.latitude);
+  const lng = Number(item.longitude);
+  const coordsNumeric = !coordinatesProvided || (Number.isFinite(lat) && Number.isFinite(lng));
+  checks.push(qualityCheck(
+    'Map coordinates are valid numbers',
+    coordsNumeric ? 'pass' : 'fail',
+    coordsNumeric ? '' : 'Coordinates are not numeric values.'
+  ));
+
+  const inCyprusBounds = !coordinatesProvided || (lat >= 34.4 && lat <= 35.8 && lng >= 32.1 && lng <= 34.9);
+  checks.push(qualityCheck(
+    'Map coordinates are within Cyprus range',
+    inCyprusBounds ? 'pass' : 'fail',
+    inCyprusBounds ? '' : 'Coordinates fall outside expected Cyprus bounds.'
+  ));
+
+  const coordsDistinct = !coordinatesProvided || Math.abs(lat - lng) >= 0.05;
+  checks.push(qualityCheck(
+    'Map coordinates look plausible',
+    coordsDistinct ? 'pass' : 'warn',
+    coordsDistinct ? '' : 'Latitude and longitude are suspiciously similar.'
+  ));
+
+  const titleDeedStandard = item.titleDeed === 'Yes' || item.titleDeed === true || item.titleDeed === 'No' || item.titleDeed === false;
+  checks.push(qualityCheck(
+    'Title deed field uses standard format',
+    titleDeedStandard ? 'pass' : 'warn',
+    titleDeedStandard ? '' : 'Title deed should be Yes/No (or true/false).'
+  ));
+
+  const emailRaw = String(item.contactEmail || '').trim();
+  const emailOk = emailRaw && isValidEmail(emailRaw);
+  checks.push(qualityCheck(
+    'Contact email is valid',
+    emailOk ? 'pass' : 'warn',
+    emailOk ? '' : 'Email missing or invalid format.'
+  ));
+
+  const phoneDigits = String(item.contactPhone || '').replace(/\D/g, '');
+  const phoneOk = phoneDigits.length >= 8;
+  checks.push(qualityCheck(
+    'Contact phone is complete',
+    phoneOk ? 'pass' : 'warn',
+    phoneOk ? '' : 'Phone number missing or too short.'
+  ));
+
+  const failCount = checks.filter(x => x.status === 'fail').length;
+  const warnCount = checks.filter(x => x.status === 'warn').length;
+  const issues = checks
+    .filter(x => x.status !== 'pass')
+    .map(x => issue(x.status === 'fail' ? 'error' : 'warning', `${x.label}${x.detail ? `: ${x.detail}` : ''}`));
+
+  let level = 'verified';
+  let label = 'Data verified';
+
+  if (failCount > 0 || warnCount >= 2) {
+    level = 'caution';
+    label = 'Check details';
+  } else if (warnCount > 0) {
+    level = 'review';
+    label = 'Needs review';
+  }
+
+  return { level, label, checks, issues };
+}
+
+function buildListingQualityMap(data) {
+  const byId = new Map();
+  data.forEach(item => {
+    byId.set(item.id, evaluateListingQuality(item));
+  });
+  return byId;
+}
+
+function getListingQuality(item) {
+  return listingQualityById.get(item.id) || {
+    level: 'review',
+    label: 'Needs review',
+    checks: [qualityCheck('Quality checks availability', 'warn', 'Quality check data unavailable for this listing.')],
+    issues: [issue('warning', 'Quality check data unavailable for this listing.')]
+  };
+}
+
+function renderQualitySummary(data) {
+  if (!qualitySummaryEl) return;
+
+  if (!Array.isArray(data) || data.length === 0) {
+    qualitySummaryEl.style.display = 'none';
+    qualitySummaryEl.innerHTML = '';
+    return;
+  }
+
+  let verified = 0;
+  let review = 0;
+  let caution = 0;
+
+  data.forEach(item => {
+    const quality = getListingQuality(item);
+    if (quality.level === 'verified') verified += 1;
+    else if (quality.level === 'review') review += 1;
+    else caution += 1;
+  });
+
+  qualitySummaryEl.style.display = 'flex';
+  qualitySummaryEl.innerHTML = `
+    <span class="quality-summary-label">Listing data trust checks (${data.length})</span>
+    <div class="quality-summary-counts">
+      <span class="quality-pill quality-pill--verified">${verified} verified</span>
+      <span class="quality-pill quality-pill--review">${review} needs review</span>
+      <span class="quality-pill quality-pill--caution">${caution} check details</span>
+    </div>
+  `;
 }
 
 function normalizeWhatsAppPhone(phoneRaw) {
@@ -651,6 +1089,7 @@ async function loadListings(){
     if(!res.ok) throw new Error('Failed to load listings.json');
     const data = await res.json();
     allListings = data;
+    listingQualityById = buildListingQualityMap(data);
     renderHeroStats(data);
     renderFilters(data);
     injectListingsSchema(data);
@@ -718,6 +1157,7 @@ function renderListings(data){
   </svg>`;
   }
   if(!Array.isArray(data) || data.length === 0){
+    renderQualitySummary([]);
     listingsEl.innerHTML = `
       <div class="empty-listings-message">
         <span class="empty-icon">${svgEmptyState()}</span>
@@ -726,9 +1166,17 @@ function renderListings(data){
     `;
     return;
   }
+  renderQualitySummary(data);
+  initQualityTooltipInteractions();
+  qualityTooltipContentById.clear();
+  hideQualityTooltipPortal();
   listingsEl.innerHTML = '';
-  data.forEach(item => {
+  data.forEach((item, index) => {
     const enquiry = buildEnquiryLinks(item);
+    const quality = getListingQuality(item);
+    const safeQualityId = String(item.id || `listing-${index}`).replace(/[^a-zA-Z0-9_-]/g, '');
+    const qualityTooltipId = `qualityTooltip-${safeQualityId}-${index}`;
+    qualityTooltipContentById.set(qualityTooltipId, buildQualityTooltipPanel(quality));
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
@@ -736,6 +1184,9 @@ function renderListings(data){
       <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
       <div class="card-body">
         <h3 class="card-title">${escapeHtml(item.title)}</h3>
+        <div class="quality-chip-wrap">
+          <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false">${escapeHtml(quality.label)}</button>
+        </div>
         <div class="card-meta">
           <span class="icon-attr">${svgArea()}</span> ${escapeHtml(item.size)}
           <span class="icon-attr">${svgPrice()}</span> ${escapeHtml(item.price)}
@@ -760,7 +1211,10 @@ function renderListings(data){
     const img = card.querySelector('img');
     img.addEventListener('error', () => { img.src = PLACEHOLDER_IMG; }, { once: true });
 
-    const btn = card.querySelector('button');
+    const qualityTrigger = card.querySelector('.quality-chip-trigger');
+    if (qualityTrigger) attachQualityTooltipTriggerListeners(qualityTrigger);
+
+    const btn = card.querySelector('.card-actions > .button[data-id]');
     btn.addEventListener('click', () => openModal(item));
   });
 }

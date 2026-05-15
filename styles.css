@@ -91,6 +91,52 @@
   backdrop-filter: blur(6px);
   letter-spacing: 0.01em;
 }
+.quality-summary {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #f7fbf7;
+  border: 1px solid #d6e6d6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+  color: #274327;
+}
+.quality-summary-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.quality-summary-counts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.quality-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.quality-pill--verified {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #b8dfbd;
+}
+.quality-pill--review {
+  background: #fff8e1;
+  color: #8a5a00;
+  border-color: #ffe08a;
+}
+.quality-pill--caution {
+  background: #fdecea;
+  color: #9c2a2a;
+  border-color: #f3c2bc;
+}
 .card-status-sticker {
   position: absolute;
   top: 10px;
@@ -622,6 +668,135 @@ body{
 }
 
 .card-title{font-weight:600;margin:0 0 6px}
+.quality-chip-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0 0 8px 0;
+}
+.quality-chip {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+.quality-chip-trigger {
+  cursor: help;
+}
+.quality-tooltip-panel {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  z-index: 980;
+  width: min(360px, calc(100vw - 80px));
+  background: #ffffff;
+  border: 1px solid #d4dfd4;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  padding: 10px 12px;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.quality-tooltip-panel.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.quality-tooltip-portal {
+  max-width: calc(100vw - 24px);
+}
+.quality-tooltip-panel.is-mobile-sheet {
+  left: 12px !important;
+  right: 12px !important;
+  top: auto !important;
+  bottom: 12px !important;
+  width: auto;
+  max-width: none;
+  max-height: min(62vh, 460px);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+}
+.quality-tooltip-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #274327;
+}
+.quality-tooltip-summary {
+  margin: 6px 0 8px 0;
+  font-size: 0.78rem;
+  color: #3d4e3d;
+  line-height: 1.45;
+}
+.quality-tooltip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+.quality-tooltip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.quality-tooltip-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+.quality-tooltip-status--pass {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #b8dfbd;
+}
+.quality-tooltip-status--warn {
+  background: #fff8e1;
+  color: #8a5a00;
+  border-color: #ffe08a;
+}
+.quality-tooltip-status--fail {
+  background: #fdecea;
+  color: #9c2a2a;
+  border-color: #f3c2bc;
+}
+.quality-tooltip-text {
+  font-size: 0.74rem;
+  color: #3f4f3f;
+  line-height: 1.35;
+}
+.quality-chip--verified {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #b8dfbd;
+}
+.quality-chip--review {
+  background: #fff8e1;
+  color: #8a5a00;
+  border-color: #ffe08a;
+}
+.quality-chip--caution {
+  background: #fdecea;
+  color: #9c2a2a;
+  border-color: #f3c2bc;
+}
 .card-meta{color:var(--muted);font-size:0.9rem;margin-bottom:8px}
 .card-desc{flex:1;margin-bottom:12px;color:#333}
 .card-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -892,4 +1067,11 @@ body{
   .card-quick-actions .cta-label-desktop{display:none}
   .card-quick-actions .cta-label-mobile{display:inline}
   .map-pin-icon{font-size:1.5em}
+  .quality-tooltip-panel.is-mobile-sheet {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    padding: 12px;
+    max-height: min(70vh, 520px);
+  }
 }
