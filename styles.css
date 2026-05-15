@@ -71,24 +71,28 @@
 }
 .hero-stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 22px;
-  position: relative;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: nowrap; /* keep chips on a single line */
+  align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   z-index: 3;
-}
-
-/* Hero quality summary removed — summary UI disabled */
-.hero-stat {
+.card-fact,
+.card-attr {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(10, 20, 10, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 0.87rem;
-  font-weight: 500;
-  padding: 5px 13px;
+  flex-wrap: nowrap; /* keep chips on a single line */
+  background: #eef7ee; /* slightly darker, muted green */
+  overflow: hidden; /* never horizontal scroll */
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.88rem; /* chips slightly smaller than title, larger than description */
+  font-weight: 600;
+  flex: 1 1 0; /* share one line evenly */
+  min-width: 0;
+  white-space: nowrap;
+}
   border-radius: 20px;
   backdrop-filter: blur(6px);
   letter-spacing: 0.01em;
@@ -618,7 +622,7 @@ body{
 }
 
 .card-body{
-  padding:12px;
+  padding:14px;
   flex:1 1 auto;
   display:flex;
   flex-direction:column;
@@ -634,7 +638,8 @@ body{
 .card-title-row .card-title {
   margin: 0;
   flex: 1 1 auto;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 .card-title-row .quality-chip-wrap {
   margin: 0 0 0 8px;
@@ -643,6 +648,69 @@ body{
   position: relative;
   display: inline-block;
   margin: 0 0 8px 0;
+}
+/* Compact chips shown under the title with key decision facts (zone, deed, €/m²) */
+.card-facts {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap; /* wraps to 2 lines on smaller cards */
+  align-items: center;
+  overflow: visible; /* no clipping, no horizontal scroll */
+}
+.card-fact,
+.card-attr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef7ee; /* slightly darker, muted green */
+  border: 1px solid #d7ead7;
+  color: #1b5e20; /* darker accent for better contrast */
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.88rem; /* chips slightly smaller than title, larger than description */
+  font-weight: 600;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.card-fact--muted {
+  color: var(--muted);
+  background: transparent;
+  border-color: transparent;
+  font-weight: 500;
+}
+.card-attr .icon-attr,
+.card-fact .icon-attr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-attr .icon-attr svg,
+.card-fact .icon-attr svg {
+  width: 0.95em;
+  height: 0.95em;
+  opacity: 0.92;
+}
+.attr-text {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.card-location { margin-top: 6px; }
+
+@media (max-width: 420px) {
+  .card-attr, .card-fact { font-size: 0.72rem; padding: 3px 6px; }
 }
 .quality-chip {
   display: inline-flex;
@@ -769,7 +837,7 @@ body{
   border-color: #f3c2bc;
 }
 .card-meta{color:var(--muted);font-size:0.9rem;margin-bottom:8px}
-.card-desc{flex:1;margin-bottom:12px;color:#333}
+.card-desc{flex:1;margin-bottom:12px;color:#374a38;font-size:0.82rem;line-height:1.45;border-top:1px solid rgba(0,0,0,0.04);padding-top:10px;margin-top:10px}
 .card-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .card-quick-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
@@ -777,23 +845,33 @@ body{
   background:var(--accent);
   color:white;
   border:none;
-  padding:8px 12px;
+  padding:0 12px;
+  min-height:36px;
+  height:36px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   border-radius:6px;
   text-decoration:none;
   cursor:pointer;
 }
 .button-compact{
-  font-size:0.83rem;
-  padding:6px 9px;
+  font-size:0.85rem;
+  padding:0 10px;
+  min-height:32px;
+  height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   border-radius:5px;
 }
 .button-secondary{
-  background:#eef7ee;
-  color:#1f5d1f;
-  border:1px solid #b7d8b7;
+  background:transparent;
+  color:var(--accent);
+  border:1px solid rgba(43,122,43,0.16);
 }
 .button-secondary:hover{
-  background:#e3f2e3;
+  background:rgba(43,122,43,0.06);
 }
 .button-whatsapp-inline{
   background:#25d366;
@@ -814,6 +892,8 @@ body{
   line-height:0;
 }
 .cta-label-mobile{display:none}
+
+.button:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(43,122,43,0.12)}
 
 .contact {
   background: #f8fdf8;

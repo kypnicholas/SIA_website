@@ -1126,6 +1126,23 @@ function renderListings(data){
     qualityTooltipContentById.set(qualityTooltipId, buildQualityTooltipPanel(quality));
     const card = document.createElement('article');
     card.className = 'card';
+
+    // Compute formatted price and per-m² for quick decision-making display
+    const priceNum = parsePrice(item.price);
+    const formattedPrice = Number.isFinite(priceNum)
+      ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(priceNum)
+      : (item.price || '—');
+    const areaNumLocal = parseArea(item.size);
+    let unitPriceStr = '';
+    if (Number.isFinite(priceNum) && Number.isFinite(areaNumLocal) && areaNumLocal > 0) {
+      const unit = priceNum / areaNumLocal;
+      if (Number.isFinite(unit) && unit > 0) {
+        unitPriceStr = unit >= 10 ? `${Math.round(unit)} €/m²` : `${unit.toFixed(2)} €/m²`;
+      }
+    }
+    // Title deed short label
+    const titleDeedShort = (item.titleDeed === 'Yes' || item.titleDeed === true) ? 'Yes' : 'No';
+
     card.innerHTML = `
       <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
       <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
@@ -1136,12 +1153,14 @@ function renderListings(data){
             <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false">${escapeHtml(quality.label)}</button>
           </div>
         </div>
-        <div class="card-meta">
-          <span class="icon-attr">${svgArea()}</span> ${escapeHtml(item.size)}
-          <span class="icon-attr">${svgPrice()}</span> ${escapeHtml(item.price)}
+        <div class="card-facts">
+          <span class="card-fact"><span class="attr-text">Deed: ${escapeHtml(titleDeedShort)}</span></span>
+          ${unitPriceStr ? `<span class="card-fact"><span class="attr-text">Unit: ${escapeHtml(unitPriceStr)}</span></span>` : ''}
+          <span class="card-attr"><span class="icon-attr">${svgArea()}</span><span class="attr-text">${escapeHtml(item.size)}</span></span>
+          <span class="card-attr"><span class="attr-text">${escapeHtml(formattedPrice)}</span></span>
         </div>
         <div class="card-location">
-          <span class="icon-attr">${svgLocation()}</span> <span>${escapeHtml(item.location)}</span>
+          <span class="card-attr"><span class="icon-attr">${svgLocation()}</span><span class="attr-text">${escapeHtml(item.location)}</span></span>
         </div>
         <div class="card-desc">${escapeHtml(item.shortDescription)}</div>
         <div class="card-actions">
