@@ -327,8 +327,9 @@ function initQualityTooltipInteractions() {
 function evaluateListingQuality(item) {
   const checks = [];
 
+  // Essential fields
   const requiredFields = [
-    ['id', 'Listing ID'],
+    ['id', 'ID'],
     ['title', 'Title'],
     ['location', 'Location'],
     ['size', 'Area'],
@@ -339,133 +340,87 @@ function evaluateListingQuality(item) {
   const missingRequired = requiredFields
     .filter(([field]) => !String(item[field] || '').trim())
     .map(([, label]) => label);
-  checks.push(qualityCheck(
-    'Essential listing details are present',
-    missingRequired.length ? 'fail' : 'pass',
-    missingRequired.length ? `Missing: ${missingRequired.join(', ')}` : ''
-  ));
+  checks.push(qualityCheck('Core fields present', missingRequired.length ? 'fail' : 'pass', missingRequired.length ? `Missing: ${missingRequired.join(', ')}` : ''));
 
-  const hasDescription = String(item.description || '').trim().length >= 20;
-  checks.push(qualityCheck(
-    'Full plot description is available',
-    hasDescription ? 'pass' : 'warn',
-    hasDescription ? '' : 'Description missing or too short.'
-  ));
+  // Descriptions & image alt
+  const missingDesc = [];
+  if (!String(item.description || '').trim() || String(item.description || '').trim().length < 20) missingDesc.push('full description');
+  if (!String(item.shortDescription || '').trim() || String(item.shortDescription || '').trim().length < 15) missingDesc.push('summary');
+  if (!String(item.imageAlt || '').trim() || String(item.imageAlt || '').trim().length < 6) missingDesc.push('image alt');
+  checks.push(qualityCheck('Descriptions & image alt', missingDesc.length ? 'warn' : 'pass', missingDesc.length ? `Missing: ${missingDesc.join(', ')}` : ''));
 
-  const hasShortDescription = String(item.shortDescription || '').trim().length >= 15;
-  checks.push(qualityCheck(
-    'Short card summary is available',
-    hasShortDescription ? 'pass' : 'warn',
-    hasShortDescription ? '' : 'Short description missing or too short.'
-  ));
-
-  const hasImageAlt = String(item.imageAlt || '').trim().length >= 6;
-  checks.push(qualityCheck(
-    'Image text description is set',
-    hasImageAlt ? 'pass' : 'warn',
-    hasImageAlt ? '' : 'Image alt text missing or very short.'
-  ));
-
+  // Area (format + plausibility)
   const areaNum = parseArea(item.size);
-  const areaValid = Number.isFinite(areaNum) && areaNum > 0;
-  checks.push(qualityCheck(
-    'Area value format is valid',
-    areaValid ? 'pass' : 'fail',
-    areaValid ? '' : 'Area is not a valid positive number.'
-  ));
-  const areaInExpectedRange = areaValid && areaNum <= 500000;
-  checks.push(qualityCheck(
-    'Area looks realistic',
-    !areaValid ? 'fail' : (areaInExpectedRange ? 'pass' : 'warn'),
-    !areaValid ? 'Cannot assess plausibility due to invalid area.' : (areaInExpectedRange ? '' : 'Area is unusually large; please confirm units (m²).')
-  ));
+  if (!Number.isFinite(areaNum) || areaNum <= 0) {
+    checks.push(qualityCheck('Area (m²) valid', 'fail', 'Invalid/missing'));
+  } else if (areaNum > 500000) {
+    checks.push(qualityCheck('Area (m²) valid', 'warn', 'Very large — check units'));
+  } else {
+    checks.push(qualityCheck('Area (m²) valid', 'pass', ''));
+  }
 
+  // Price (format + plausibility)
   const priceNum = parsePrice(item.price);
-  const priceValid = Number.isFinite(priceNum) && priceNum > 0;
-  checks.push(qualityCheck(
-    'Price value format is valid',
-    priceValid ? 'pass' : 'fail',
-    priceValid ? '' : 'Price is not a valid positive number.'
-  ));
-  const priceInExpectedRange = priceValid && priceNum <= 50000000;
-  checks.push(qualityCheck(
-    'Price looks realistic',
-    !priceValid ? 'fail' : (priceInExpectedRange ? 'pass' : 'warn'),
-    !priceValid ? 'Cannot assess plausibility due to invalid price.' : (priceInExpectedRange ? '' : 'Price is unusually high; please verify source data.')
-  ));
+  if (!Number.isFinite(priceNum) || priceNum <= 0) {
+    checks.push(qualityCheck('Price present & formatted', 'fail', 'Invalid/missing'));
+  } else if (priceNum > 50000000) {
+    checks.push(qualityCheck('Price present & formatted', 'warn', 'Very high'));
+  } else {
+    checks.push(qualityCheck('Price present & formatted', 'pass', ''));
+  }
 
+  // Unit price (€/m²)
   let unitPrice = NaN;
-  if (areaValid && priceValid) unitPrice = priceNum / areaNum;
-  const unitPriceOk = Number.isFinite(unitPrice) && unitPrice >= 2 && unitPrice <= 120;
-  checks.push(qualityCheck(
-    'Price per m² is in expected range',
-    !Number.isFinite(unitPrice) ? 'fail' : (unitPriceOk ? 'pass' : 'warn'),
-    !Number.isFinite(unitPrice) ? 'Cannot calculate price per m².' : (unitPriceOk ? '' : `Unusual value (${unitPrice.toFixed(2)} EUR/m²).`)
-  ));
+  if (Number.isFinite(areaNum) && Number.isFinite(priceNum) && areaNum > 0) unitPrice = priceNum / areaNum;
+  if (!Number.isFinite(unitPrice)) {
+    checks.push(qualityCheck('Unit price plausibility (€/m²)', 'warn', 'N/A'));
+  } else if (unitPrice < 2 || unitPrice > 120) {
+    checks.push(qualityCheck('Unit price plausibility (€/m²)', 'warn', `${unitPrice.toFixed(2)} €/m² (unusual)`));
+  } else {
+    checks.push(qualityCheck('Unit price plausibility (€/m²)', 'pass', ''));
+  }
 
+  // Status & title deed format
   const statusNorm = String(item.status || '').trim().toLowerCase();
   const statusOk = ['available', 'pending', 'sold'].includes(statusNorm);
-  checks.push(qualityCheck(
-    'Availability status uses standard values',
-    statusOk ? 'pass' : 'warn',
-    statusOk ? '' : 'Status should be Available, Pending, or Sold.'
-  ));
+  const titleDeedStandard = item.titleDeed === 'Yes' || item.titleDeed === true || item.titleDeed === 'No' || item.titleDeed === false;
+  const stIssues = [];
+  if (!statusOk) stIssues.push('status');
+  if (!titleDeedStandard) stIssues.push('titleDeed');
+  // map to human-friendly labels for detail
+  const stIssuesHuman = stIssues.map(x => x === 'titleDeed' ? 'title deed' : x);
+  checks.push(qualityCheck('Status & title-deed info', stIssues.length ? 'warn' : 'pass', stIssues.length ? `Invalid: ${stIssuesHuman.join(', ')}` : ''));
 
+  // Map coordinates (combined checks)
   const hasLat = item.latitude !== '' && item.latitude != null;
   const hasLng = item.longitude !== '' && item.longitude != null;
-  const coordinatePairComplete = hasLat === hasLng;
-  checks.push(qualityCheck(
-    'Map coordinates are complete (lat + lng)',
-    coordinatePairComplete ? 'pass' : 'fail',
-    coordinatePairComplete ? '' : 'Latitude/longitude pair is incomplete.'
-  ));
+  if (hasLat !== hasLng) {
+    checks.push(qualityCheck('Latitude & longitude', 'fail', 'Incomplete pair'));
+  } else if (!hasLat && !hasLng) {
+    checks.push(qualityCheck('Latitude & longitude', 'pass', ''));
+  } else {
+    const lat = Number(item.latitude);
+    const lng = Number(item.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      checks.push(qualityCheck('Latitude & longitude', 'fail', 'Not numeric'));
+    } else if (lat < 34.4 || lat > 35.8 || lng < 32.1 || lng > 34.9) {
+      checks.push(qualityCheck('Latitude & longitude', 'warn', 'Outside Cyprus'));
+    } else if (Math.abs(lat - lng) < 0.05) {
+      checks.push(qualityCheck('Latitude & longitude', 'warn', 'Lat/lng unusually similar'));
+    } else {
+      checks.push(qualityCheck('Latitude & longitude', 'pass', ''));
+    }
+  }
 
-  const coordinatesProvided = hasLat && hasLng;
-  const lat = Number(item.latitude);
-  const lng = Number(item.longitude);
-  const coordsNumeric = !coordinatesProvided || (Number.isFinite(lat) && Number.isFinite(lng));
-  checks.push(qualityCheck(
-    'Map coordinates are valid numbers',
-    coordsNumeric ? 'pass' : 'fail',
-    coordsNumeric ? '' : 'Coordinates are not numeric values.'
-  ));
-
-  const inCyprusBounds = !coordinatesProvided || (lat >= 34.4 && lat <= 35.8 && lng >= 32.1 && lng <= 34.9);
-  checks.push(qualityCheck(
-    'Map coordinates are within Cyprus range',
-    inCyprusBounds ? 'pass' : 'fail',
-    inCyprusBounds ? '' : 'Coordinates fall outside expected Cyprus bounds.'
-  ));
-
-  const coordsDistinct = !coordinatesProvided || Math.abs(lat - lng) >= 0.05;
-  checks.push(qualityCheck(
-    'Map coordinates look plausible',
-    coordsDistinct ? 'pass' : 'warn',
-    coordsDistinct ? '' : 'Latitude and longitude are suspiciously similar.'
-  ));
-
-  const titleDeedStandard = item.titleDeed === 'Yes' || item.titleDeed === true || item.titleDeed === 'No' || item.titleDeed === false;
-  checks.push(qualityCheck(
-    'Title deed field uses standard format',
-    titleDeedStandard ? 'pass' : 'warn',
-    titleDeedStandard ? '' : 'Title deed should be Yes/No (or true/false).'
-  ));
-
+  // Contact info
   const emailRaw = String(item.contactEmail || '').trim();
   const emailOk = emailRaw && isValidEmail(emailRaw);
-  checks.push(qualityCheck(
-    'Contact email is valid',
-    emailOk ? 'pass' : 'warn',
-    emailOk ? '' : 'Email missing or invalid format.'
-  ));
-
   const phoneDigits = String(item.contactPhone || '').replace(/\D/g, '');
   const phoneOk = phoneDigits.length >= 8;
-  checks.push(qualityCheck(
-    'Contact phone is complete',
-    phoneOk ? 'pass' : 'warn',
-    phoneOk ? '' : 'Phone number missing or too short.'
-  ));
+  const contactIssues = [];
+  if (!emailOk) contactIssues.push('email');
+  if (!phoneOk) contactIssues.push('phone');
+  checks.push(qualityCheck('Contact details valid (email/phone)', contactIssues.length ? 'warn' : 'pass', contactIssues.length ? `Invalid: ${contactIssues.join(', ')}` : ''));
 
   const failCount = checks.filter(x => x.status === 'fail').length;
   const warnCount = checks.filter(x => x.status === 'warn').length;
@@ -499,7 +454,7 @@ function getListingQuality(item) {
   return listingQualityById.get(item.id) || {
     level: 'review',
     label: 'Needs review',
-    checks: [qualityCheck('Quality checks availability', 'warn', 'Quality check data unavailable for this listing.')],
+    checks: [qualityCheck('Quality checks status', 'warn', 'Quality check data unavailable for this listing.')],
     issues: [issue('warning', 'Quality check data unavailable for this listing.')]
   };
 }
