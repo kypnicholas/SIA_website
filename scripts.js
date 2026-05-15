@@ -37,7 +37,6 @@ let qualityTooltipHandlersBound = false;
 const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='170' viewBox='0 0 400 170'%3E%3Crect width='400' height='170' fill='%23f4faf4'/%3E%3Ctext x='200' y='90' text-anchor='middle' fill='%23b2dcb2' font-size='14' font-family='system-ui'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
-const qualitySummaryEl = document.getElementById('qualitySummary');
 const modal = document.getElementById('modal');
 const modalClose = document.getElementById('modalClose');
 const modalTitle = document.getElementById('modalTitle');
@@ -189,6 +188,30 @@ function positionQualityTooltipPortal(trigger) {
   const touchMode = isTouchInputMode();
 
   if (touchMode) {
+    // If the trigger is in the lower half of the viewport on mobile, scroll it
+    // up so the card sits in the top quarter — this prevents the bottom-sheet
+    // tooltip from covering the highlighted card.
+    const triggerRect = trigger.getBoundingClientRect();
+    const viewportMid = window.innerHeight / 2;
+    if (triggerRect.top > viewportMid) {
+      const desiredTop = window.scrollY + triggerRect.top - Math.round(window.innerHeight * 0.25);
+      try {
+        window.scrollTo({ top: Math.max(0, desiredTop), left: 0, behavior: 'smooth' });
+      } catch (e) {
+        // fallback for older browsers
+        window.scrollTo(0, Math.max(0, desiredTop));
+      }
+      // Position the sheet after a short delay to let the scroll settle.
+      setTimeout(() => {
+        panel.classList.add('is-mobile-sheet');
+        panel.style.left = '12px';
+        panel.style.right = '12px';
+        panel.style.top = 'auto';
+        panel.style.bottom = '12px';
+      }, 280);
+      return;
+    }
+
     panel.classList.add('is-mobile-sheet');
     panel.style.left = '12px';
     panel.style.right = '12px';
@@ -459,52 +482,7 @@ function getListingQuality(item) {
   };
 }
 
-function renderQualitySummary(data) {
-  // Move the summary into the hero area for higher visibility.
-  const hero = document.getElementById('heroStats');
-
-  // Keep the legacy `qualitySummaryEl` hidden as a fallback.
-  if (qualitySummaryEl) {
-    qualitySummaryEl.style.display = 'none';
-    qualitySummaryEl.innerHTML = '';
-  }
-
-  if (!Array.isArray(data) || data.length === 0) {
-    if (hero) {
-      const existing = hero.querySelector('.hero-quality-summary');
-      if (existing) existing.remove();
-    }
-    return;
-  }
-
-  let verified = 0;
-  let review = 0;
-  let caution = 0;
-
-  data.forEach(item => {
-    const quality = getListingQuality(item);
-    if (quality.level === 'verified') verified += 1;
-    else if (quality.level === 'review') review += 1;
-    else caution += 1;
-  });
-
-  const summaryHtml = `
-    <div class="hero-quality-summary" role="group" aria-label="Listing data trust checks">
-      <span class="quality-summary-label">Listing data trust checks (${data.length})</span>
-      <div class="quality-summary-counts">
-        <span class="quality-pill quality-pill--verified">${verified} verified</span>
-        <span class="quality-pill quality-pill--review">${review} needs review</span>
-        <span class="quality-pill quality-pill--caution">${caution} check details</span>
-      </div>
-    </div>
-  `;
-
-  if (hero) {
-    const existing = hero.querySelector('.hero-quality-summary');
-    if (existing) existing.outerHTML = summaryHtml;
-    else hero.insertAdjacentHTML('beforeend', summaryHtml);
-  }
-}
+// `renderQualitySummary` removed — summary UI disabled per user request.
 
 function normalizeWhatsAppPhone(phoneRaw) {
   const digits = String(phoneRaw || '').replace(/\D/g, '');
@@ -1128,7 +1106,6 @@ function renderListings(data){
   </svg>`;
   }
   if(!Array.isArray(data) || data.length === 0){
-    renderQualitySummary([]);
     listingsEl.innerHTML = `
       <div class="empty-listings-message">
         <span class="empty-icon">${svgEmptyState()}</span>
@@ -1137,7 +1114,6 @@ function renderListings(data){
     `;
     return;
   }
-  renderQualitySummary(data);
   initQualityTooltipInteractions();
   qualityTooltipContentById.clear();
   hideQualityTooltipPortal();

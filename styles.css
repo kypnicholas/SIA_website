@@ -78,23 +78,7 @@
   z-index: 3;
 }
 
-/* Hero-specific quality summary styling (placed inside #heroStats) */
-.hero-quality-summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 12px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-}
-.hero-quality-summary .quality-summary-label {
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-.hero-quality-summary .quality-summary-counts { display:flex; gap:8px; align-items:center; }
+/* Hero quality summary removed — summary UI disabled */
 .hero-stat {
   display: inline-flex;
   align-items: center;
@@ -109,52 +93,7 @@
   backdrop-filter: blur(6px);
   letter-spacing: 0.01em;
 }
-.quality-summary {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: #f7fbf7;
-  border: 1px solid #d6e6d6;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin: 8px 0 12px;
-  color: #274327;
-}
-.quality-summary-label {
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-.quality-summary-counts {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.quality-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-}
-.quality-pill--verified {
-  background: #e8f5e9;
-  color: #1b5e20;
-  border-color: #b8dfbd;
-}
-.quality-pill--review {
-  background: #fff8e1;
-  color: #8a5a00;
-  border-color: #ffe08a;
-}
-.quality-pill--caution {
-  background: #fdecea;
-  color: #9c2a2a;
-  border-color: #f3c2bc;
-}
+/* Quality summary styles removed — kept if re-enable later */
 .card-status-sticker {
   position: absolute;
   top: 10px;
