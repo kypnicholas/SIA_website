@@ -624,17 +624,18 @@ body{
 .card-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 6px;
 }
 .card-title-row .card-title {
   margin: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   font-size: 1.05rem;
   font-weight: 700;
 }
 .card-title-row .quality-chip-wrap {
-  margin: 0 0 0 8px;
+  margin: 0 0 0 2px;
+  flex: 0 0 auto;
 }
 .quality-chip-wrap {
   position: relative;
@@ -708,11 +709,11 @@ body{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   width: fit-content;
   min-width: 0;
   margin: 0;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 700;
@@ -723,11 +724,20 @@ body{
   cursor: help;
 }
 .quality-chip-icon {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.74rem;
+  width: 15px;
+  height: 15px;
+  font-size: 9.5px;
+  font-weight: 800;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #ffffff;
   line-height: 1;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.12);
+  overflow: hidden;
 }
 .quality-chip-text {
   display: inline-block;
@@ -829,9 +839,9 @@ body{
   line-height: 1.35;
 }
 .quality-chip--verified {
-  background: #f2f8f2;
+  background: #f2f9f2;
   color: #2a5e2a;
-  border-color: #d5e7d5;
+  border-color: #d7ebd7;
   font-weight: 600;
 }
 .quality-chip--review {
@@ -845,6 +855,10 @@ body{
   border-color: #f3c2bc;
 }
 
+.quality-chip-icon--verified { background: #25c13a; }
+.quality-chip-icon--review { background: #d4a11a; }
+.quality-chip-icon--caution { background: #d34f42; }
+
 /* Narrow screens: icon-only quality chips */
 @media (max-width: 640px) {
   .quality-chip {
@@ -857,27 +871,18 @@ body{
   }
   .quality-chip-icon {
     display: inline-flex;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
   }
   .quality-chip-text {
     display: none;
   }
 
-  .quality-chip--verified {
+  .quality-chip--verified,
+  .quality-chip--review,
+  .quality-chip--caution {
     background: transparent;
-    border: none;
-  }
-  .quality-chip-icon--verified {
-    width: 18px;
-    height: 18px;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 800;
-    line-height: 1;
-    border-radius: 50%;
-    background: #25c13a;
-    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.12);
-    /* scalloped badge edge, similar to provided icon */
-    clip-path: polygon(50% 0%, 58% 3%, 67% 1%, 74% 6%, 83% 6%, 88% 13%, 96% 16%, 98% 25%, 100% 33%, 97% 42%, 99% 50%, 97% 58%, 100% 67%, 98% 75%, 96% 84%, 88% 87%, 83% 94%, 74% 94%, 67% 99%, 58% 97%, 50% 100%, 42% 97%, 33% 99%, 26% 94%, 17% 94%, 12% 87%, 4% 84%, 2% 75%, 0% 67%, 3% 58%, 1% 50%, 3% 42%, 0% 33%, 2% 25%, 4% 16%, 12% 13%, 17% 6%, 26% 6%, 33% 1%, 42% 3%);
   }
 }
 
