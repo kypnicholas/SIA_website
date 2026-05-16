@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (label) label.textContent = 'Show Filters';
       }
     }
-    setExpanded(false);
+    const desktopView = window.matchMedia('(min-width: 900px)').matches;
+    setExpanded(desktopView);
     toggleBtn.addEventListener('click', function() {
       setExpanded(!filters.classList.contains('expanded'));
     });
@@ -34,9 +35,16 @@ let qualityTooltipPortalEl = null;
 let qualityTooltipActiveTrigger = null;
 let qualityTooltipCloseTimer = null;
 let qualityTooltipHandlersBound = false;
+let filterBounds = {
+  areaMin: null,
+  areaMax: null,
+  priceMin: null,
+  priceMax: null
+};
 const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='170' viewBox='0 0 400 170'%3E%3Crect width='400' height='170' fill='%23f4faf4'/%3E%3Ctext x='200' y='90' text-anchor='middle' fill='%23b2dcb2' font-size='14' font-family='system-ui'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 // Simple renderer for listings.json and modal behavior
 const listingsEl = document.getElementById('listings');
+const filterStateBarEl = document.getElementById('filterStateBar');
 const modal = document.getElementById('modal');
 const modalClose = document.getElementById('modalClose');
 const modalTitle = document.getElementById('modalTitle');
@@ -536,31 +544,6 @@ function normalizeSearchText(value) {
     .trim();
 }
 
-function buildSearchIndex(item) {
-  const hasTitleDeed = item.titleDeed === 'Yes' || item.titleDeed === true;
-  const titleDeedTerms = hasTitleDeed
-    ? 'title deed yes available'
-    : 'title deed no unavailable';
-
-  return normalizeSearchText([
-    item.id,
-    item.title,
-    item.shortDescription,
-    item.description,
-    item.location,
-    item.notes,
-    item.status,
-    item.size,
-    item.price,
-    `€${item.price || ''}`,
-    item.contactEmail,
-    item.contactPhone,
-    item.latitude,
-    item.longitude,
-    titleDeedTerms
-  ].filter(Boolean).join(' '));
-}
-
 function buildSearchWords(searchIndex) {
   return Array.from(new Set(
     searchIndex
@@ -626,6 +609,39 @@ function tokenMatchesSearchData(token, searchIndex, searchWords) {
   return false;
 }
 
+function findSearchMatchesByField(item, searchTokens) {
+  if (!Array.isArray(searchTokens) || !searchTokens.length) return [];
+
+  const fields = [
+    ['ID', item.id],
+    ['Title', item.title],
+    ['Location', item.location],
+    ['Status', item.status],
+    ['Area', item.size],
+    ['Price', item.price ? `€${item.price}` : ''],
+    ['Notes', item.notes],
+    ['Summary', item.shortDescription],
+    ['Description', item.description]
+  ].filter(([, value]) => String(value || '').trim());
+
+  const matches = [];
+
+  searchTokens.forEach(token => {
+    for (const [label, value] of fields) {
+      const fieldIndex = normalizeSearchText(value);
+      if (!fieldIndex) continue;
+      const fieldWords = buildSearchWords(fieldIndex);
+
+      if (tokenMatchesSearchData(token, fieldIndex, fieldWords)) {
+        matches.push({ token, label, value: String(value).trim() });
+        break;
+      }
+    }
+  });
+
+  return matches;
+}
+
 // Persist filter state in the URL so links can be shared / bookmarked
 function readFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
@@ -648,6 +664,136 @@ function writeFiltersToURL() {
   if (filterState.search)   params.set('search',   filterState.search);
   const qs = params.toString();
   history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+}
+
+function formatCurrencyCompact(value) {
+  if (!Number.isFinite(value)) return '';
+  return `€${Math.round(value).toLocaleString()}`;
+}
+
+function getSortLabel(sortValue) {
+  const labels = {
+    'size-asc': 'Area: smallest first',
+    'size-desc': 'Area: largest first',
+    'price-asc': 'Price: lowest first',
+    'price-desc': 'Price: highest first'
+  };
+  return labels[sortValue] || 'Custom sort';
+}
+
+function getActiveFilterDescriptors() {
+  const descriptors = [];
+
+  const searchVal = String(filterState.search || '').trim();
+  if (searchVal) descriptors.push({ key: 'search', label: `Search: ${searchVal}` });
+
+  const locationVal = String(filterState.location || '').trim();
+  if (locationVal) descriptors.push({ key: 'location', label: `Location: ${locationVal}` });
+
+  if (filterState.sort) descriptors.push({ key: 'sort', label: getSortLabel(filterState.sort) });
+
+  const areaMinSet = Number.isFinite(filterState.areaMin) && Number.isFinite(filterBounds.areaMin) && filterState.areaMin > filterBounds.areaMin;
+  const areaMaxSet = Number.isFinite(filterState.areaMax) && Number.isFinite(filterBounds.areaMax) && filterState.areaMax < filterBounds.areaMax;
+  if (areaMinSet || areaMaxSet) {
+    const areaMin = areaMinSet ? Math.round(filterState.areaMin) : Math.round(filterBounds.areaMin || 0);
+    const areaMax = areaMaxSet ? Math.round(filterState.areaMax) : Math.round(filterBounds.areaMax || 0);
+    descriptors.push({ key: 'area', label: `Area: ${areaMin}–${areaMax} m²` });
+  }
+
+  const priceMinSet = Number.isFinite(filterState.priceMin) && Number.isFinite(filterBounds.priceMin) && filterState.priceMin > filterBounds.priceMin;
+  const priceMaxSet = Number.isFinite(filterState.priceMax) && Number.isFinite(filterBounds.priceMax) && filterState.priceMax < filterBounds.priceMax;
+  if (priceMinSet || priceMaxSet) {
+    const priceMin = priceMinSet ? filterState.priceMin : filterBounds.priceMin;
+    const priceMax = priceMaxSet ? filterState.priceMax : filterBounds.priceMax;
+    descriptors.push({ key: 'price', label: `Price: ${formatCurrencyCompact(priceMin)}–${formatCurrencyCompact(priceMax)}` });
+  }
+
+  return descriptors;
+}
+
+function clearFilterByKey(key) {
+  if (key === 'search') filterState.search = '';
+  if (key === 'location') filterState.location = '';
+  if (key === 'sort') filterState.sort = '';
+  if (key === 'area') {
+    filterState.areaMin = null;
+    filterState.areaMax = null;
+  }
+  if (key === 'price') {
+    filterState.priceMin = null;
+    filterState.priceMax = null;
+  }
+
+  renderFilters(allListings);
+  applyFilters();
+}
+
+function buildSearchMatchSummary(matchGroups) {
+  if (!Array.isArray(matchGroups) || !matchGroups.length) return [];
+
+  const counts = new Map();
+
+  matchGroups.forEach(matches => {
+    const seenInListing = new Set();
+    const safeMatches = Array.isArray(matches) ? matches : [];
+
+    safeMatches.forEach(match => {
+      const label = String(match.label || '').trim();
+      const value = String(match.value || '').trim();
+      if (!label || !value) return;
+
+      const key = `${label}||${value}`;
+      if (seenInListing.has(key)) return;
+
+      seenInListing.add(key);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+  });
+
+  return Array.from(counts.entries())
+    .map(([key, count]) => {
+      const parts = key.split('||');
+      return { label: parts[0], value: parts[1], count };
+    })
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      if (a.label !== b.label) return a.label.localeCompare(b.label);
+      return a.value.localeCompare(b.value);
+    })
+    .slice(0, 4);
+}
+
+function renderFilterStateBar(currentCount, totalCount, searchSummary = []) {
+  if (!filterStateBarEl) return;
+
+  const active = getActiveFilterDescriptors();
+
+  const chipsHtml = active.length
+    ? active.map(item => `<button type="button" class="filter-state-chip" data-filter-key="${escapeHtml(item.key)}" aria-label="Remove ${escapeHtml(item.label)}">${escapeHtml(item.label)} <span aria-hidden="true">x</span></button>`).join('')
+    : '<span class="filter-state-none">No active filters</span>';
+
+  const searchSummaryHtml = String(filterState.search || '').trim()
+    ? `<div class="filter-search-match-row"><span class="filter-search-match-label">Search matches:</span><div class="filter-search-match-list">${searchSummary.length ? searchSummary.map(entry => `<span class="filter-search-match-chip"><strong>${escapeHtml(entry.label)}</strong> = ${escapeHtml(entry.value)} (${entry.count})</span>`).join('') : '<span class="filter-search-match-empty">No field/value hint in current results</span>'}</div></div>`
+    : '';
+
+  filterStateBarEl.innerHTML = `
+    <div class="filter-state-count">Showing <strong>${currentCount}</strong> of <strong>${totalCount}</strong> plots</div>
+    <div class="filter-state-chips">${chipsHtml}${active.length ? '<button type="button" class="filter-state-clear-all" data-filter-key="all">Clear all</button>' : ''}</div>
+    ${searchSummaryHtml}
+  `;
+
+  filterStateBarEl.querySelectorAll('[data-filter-key]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-filter-key');
+      if (key === 'all') {
+        filterState = {};
+        renderFilters(allListings);
+        applyFilters();
+        return;
+      }
+      clearFilterByKey(key);
+    });
+  });
 }
 
 // Show shimmer skeleton cards while listings.json is loading
@@ -838,6 +984,8 @@ function renderFilters(data) {
   const priceMin = priceVals.length ? priceVals.reduce((a, b) => Math.min(a, b)) : 0;
   const priceMax = priceVals.length ? priceVals.reduce((a, b) => Math.max(a, b)) : 0;
 
+  filterBounds = { areaMin, areaMax, priceMin, priceMax };
+
   // Compute current filter values for placeholders
   const areaMinVal = filterState?.areaMin ?? areaMin;
   const areaMaxVal = filterState?.areaMax ?? areaMax;
@@ -964,6 +1112,7 @@ function renderFilters(data) {
         writeFiltersToURL();
         renderFilters(allListings);
         renderListings(allListings);
+        renderFilterStateBar(allListings.length, allListings.length, []);
       }, 0);
     });
   }
@@ -983,19 +1132,18 @@ function applyFilters() {
     const areaNum = parseArea(item.size);
     const rawPrice = parsePrice(item.price);
     const priceNum = Number.isFinite(rawPrice) ? rawPrice : Infinity;
-    const searchIndex = buildSearchIndex(item);
-    const searchWords = buildSearchWords(searchIndex);
-    return { item, areaNum, priceNum, searchIndex, searchWords };
+    const searchMatches = findSearchMatchesByField(item, searchTokens);
+    return { item, areaNum, priceNum, searchMatches };
   });
 
-  filteredListings = withParsed
-    .filter(({ item, areaNum, priceNum, searchIndex, searchWords }) => {
+  const filteredWithMeta = withParsed
+    .filter(({ item, areaNum, priceNum, searchMatches }) => {
       if (isNaN(areaNum)) return false;
       const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
       const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
       const locOk = !locVal || item.location === locVal;
       const searchOk = !searchTokens.length ||
-        searchTokens.every(token => tokenMatchesSearchData(token, searchIndex, searchWords));
+        searchTokens.every(token => searchMatches.some(match => match.token === token));
       return areaOk && priceOk && locOk && searchOk;
     })
     .sort((a, b) => {
@@ -1005,10 +1153,16 @@ function applyFilters() {
       if (sortVal === 'price-desc') return b.priceNum - a.priceNum;
       return 0;
     })
-    .map(({ item }) => item);
+
+  const searchSummary = searchTokens.length
+    ? buildSearchMatchSummary(filteredWithMeta.map(entry => entry.searchMatches))
+    : [];
+
+  filteredListings = filteredWithMeta.map(({ item }) => item);
 
   writeFiltersToURL();
   renderListings(filteredListings);
+  renderFilterStateBar(filteredListings.length, allListings.length, searchSummary);
 }
 
 function renderHeroStats(data) {
@@ -1048,6 +1202,7 @@ async function loadListings(){
       applyFilters();
     } else {
       renderListings(data);
+      renderFilterStateBar(data.length, data.length, []);
     }
   }catch(err){
     listingsEl.innerHTML = `<p class="error">Unable to load listings. (${err.message})</p>`;

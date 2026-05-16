@@ -15,18 +15,55 @@
   </header>
 
   <main>
-    <div class="disclaimer-page">
+    <div class="disclaimer-page" id="legalTop">
       <h1>
         <span>🧾</span> Legal Notice &amp; Privacy Policy
       </h1>
-      <h2>Legal Notice</h2>
+
+      <p class="disclaimer-intro">This page gives a concise overview of legal scope, privacy handling, and buyer obligations before any potential transaction.</p>
+
+      <nav class="disclaimer-toc" aria-label="Legal page table of contents">
+        <h2>On this page</h2>
+        <ol class="toc-list">
+          <li><a href="#legal-notice">Legal Notice</a></li>
+          <li><a href="#privacy-policy">Privacy Policy (GDPR)</a></li>
+          <li><a href="#copyright">Copyright</a></li>
+          <li><a href="#general-disclaimer">General Disclaimer</a></li>
+        </ol>
+      </nav>
+
+      <div class="legal-summary-grid" aria-label="Key legal highlights">
+        <article class="legal-summary-card">
+          <h3>Buyer rights</h3>
+          <ul>
+            <li>You can request access, correction, or deletion of personal data.</li>
+            <li>You may request supporting maps and legal documents before proceeding.</li>
+            <li>You remain free to seek independent legal and financial advice.</li>
+          </ul>
+        </article>
+        <article class="legal-summary-card">
+          <h3>Buyer obligations</h3>
+          <ul>
+            <li>Carry out your own due diligence with official authorities.</li>
+            <li>Validate title, zoning, and planning constraints independently.</li>
+            <li>Treat website information as indicative and not a binding offer.</li>
+          </ul>
+        </article>
+      </div>
+
+      <section id="legal-notice" class="disclaimer-section" aria-labelledby="legal-notice-heading">
+      <h2 id="legal-notice-heading">Legal Notice</h2>
       <p>This website is owned and managed by the Kyprianou family, for the sole purpose of presenting and advertising privately owned land plots located in Sia, Nicosia District, Cyprus.</p>
       <p>All information, photographs, and descriptions shown on this site are provided in good faith and are believed to be accurate at the time of publication. However, no warranty is given as to completeness, accuracy, or future changes in land zoning, accessibility, or market conditions.</p>
       <p>The owner(s) of the land are private sellers and not licensed real estate agents under the Real Estate Agents Law of 2010 (71(I)/2010). Therefore, this site does not offer real estate brokerage or intermediary services to third parties and does not collect commissions for the sale of property owned by others.</p>
       <p>Prospective buyers are encouraged to conduct their own due diligence, verify title details with the Department of Lands and Surveys, and obtain independent legal and financial advice before any transaction.</p>
       <p>All sales are subject to Cypriot law, including but not limited to the Immovable Property (Tenure, Registration and Valuation) Law, the Capital Gains Tax Law, and any applicable foreign ownership approval procedures.</p>
+      </section>
+
       <hr class="disclaimer-hr">
-      <h2>Privacy Policy (GDPR Compliance)</h2>
+
+      <section id="privacy-policy" class="disclaimer-section" aria-labelledby="privacy-policy-heading">
+      <h2 id="privacy-policy-heading">Privacy Policy (GDPR Compliance)</h2>
       <ul>
         <li><strong>Personal Data Collected:</strong> When you contact us by email, your name, email address, and any message you provide are collected solely for the purpose of responding to your inquiry.</li>
         <li><strong>Data Storage:</strong> Your information is stored securely and will not be shared, sold, or transferred to any third party.</li>
@@ -35,13 +72,23 @@
         <li><strong>Your Rights:</strong> You may request access, correction, or deletion of your personal data by contacting <a href="mailto:kypmaria@cytanet.com.cy">kypmaria@cytanet.com.cy</a>.</li>
         <li><strong>Contact:</strong> For any questions or data-related requests, please contact <a href="mailto:kypmaria@cytanet.com.cy">kypmaria@cytanet.com.cy</a>.</li>
       </ul>
+      </section>
+
       <hr class="disclaimer-hr">
-      <h2>Copyright</h2>
+
+      <section id="copyright" class="disclaimer-section" aria-labelledby="copyright-heading">
+      <h2 id="copyright-heading">Copyright</h2>
       <p>All content on this website (including text, images, and layout) is &copy; <span id="year"></span> Kyprianou Family.</p>
       <p>No part of this website may be reproduced or distributed without written permission.</p>
+      </section>
+
       <hr class="disclaimer-hr">
-      <h2>Disclaimer</h2>
+
+      <section id="general-disclaimer" class="disclaimer-section" aria-labelledby="general-disclaimer-heading">
+      <h2 id="general-disclaimer-heading">General Disclaimer</h2>
       <p>The information presented does not constitute a binding offer. Any potential sale is subject to mutual agreement and verification of all legal documentation.</p>
+      </section>
+
       <a href="index.html" class="button disclaimer-back">Back to Home</a>
     </div>
   </main>
