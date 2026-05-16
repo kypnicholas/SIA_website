@@ -134,6 +134,7 @@ function buildQualityTooltipPanel(quality) {
     <p class="quality-tooltip-title">Data Quality Checklist</p>
     <p class="quality-tooltip-summary">${escapeHtml(summaryByLevel[quality.level] || summaryByLevel.review)}</p>
     <ul class="quality-tooltip-list">${checksHtml}</ul>
+    <p class="quality-tooltip-footnote"><a href="#verificationFooterNote">How verification works</a></p>
   `;
 }
 
@@ -1143,6 +1144,12 @@ function renderListings(data){
     // Title deed short label
     const titleDeedShort = (item.titleDeed === 'Yes' || item.titleDeed === true) ? 'Yes' : 'No';
 
+    const qualityIconByLevel = {
+      verified: '✓',
+      review: 'i',
+      caution: '!'
+    };
+
     card.innerHTML = `
       <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
       <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
@@ -1150,7 +1157,10 @@ function renderListings(data){
         <div class="card-title-row">
           <h3 class="card-title">${escapeHtml(item.title)}</h3>
           <div class="quality-chip-wrap card-title-quality">
-            <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false">${escapeHtml(quality.label)}</button>
+            <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false" aria-label="${escapeHtml(quality.label)}">
+              <span class="quality-chip-icon quality-chip-icon--${escapeHtml(quality.level)}" aria-hidden="true">${escapeHtml(qualityIconByLevel[quality.level] || 'i')}</span>
+              <span class="quality-chip-text">${escapeHtml(quality.label)}</span>
+            </button>
           </div>
         </div>
         <div class="card-facts">
