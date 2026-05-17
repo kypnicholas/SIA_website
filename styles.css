@@ -890,10 +890,18 @@ body{
   flex: 0 1 auto;
   font-size: 1.05rem;
   font-weight: 700;
+  line-height: 1.08;
 }
 .card-title-row .quality-chip-wrap {
   margin: 0 0 0 2px;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+}
+.card-title-quality .quality-chip {
+  position: relative;
+  top: -1px;
 }
 .quality-chip-wrap {
   position: relative;
@@ -1138,6 +1146,12 @@ body{
 
 /* Narrow screens: icon-only quality chips */
 @media (max-width: 640px) {
+  .card-title-row .card-title {
+    line-height: 1.06;
+  }
+  .card-title-quality .quality-chip {
+    top: -1px;
+  }
   .quality-chip {
     width: 18px;
     height: 18px;
