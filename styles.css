@@ -190,6 +190,10 @@
   box-shadow: 0 2px 12px rgba(44,122,44,0.05);
 }
 
+.filter-state-bar.is-hidden {
+  display: none;
+}
+
 #filters.expanded + .filter-state-bar {
   margin-top: -1px;
   border-radius: 0 0 10px 10px;
@@ -295,6 +299,112 @@
   }
   .filter-state-count {
     width: 100%;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mobile-search-controls {
+  display: none;
+}
+
+.mobile-more-filters-btn {
+  background: transparent;
+  border: none;
+  color: #4a6a4a;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0;
+  margin-top: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+}
+
+.mobile-more-filters-btn::after {
+  content: "☰";
+  font-size: 0.85rem;
+  line-height: 1;
+  color: #5f7c5f;
+  transition: color 0.2s ease;
+  margin-left: 2px;
+}
+
+.mobile-more-filters-btn:hover,
+.mobile-more-filters-btn:focus {
+  color: #2f5a2f;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.mobile-more-filters-btn:hover::after,
+.mobile-more-filters-btn:focus::after {
+  color: #2f5a2f;
+}
+
+@media (max-width: 899px) {
+  #filtersToggleBtn {
+    display: none;
+  }
+
+  .mobile-search-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #d8e6d8;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(44,122,44,0.05);
+    padding: 10px 12px;
+    margin: 0 0 8px;
+  }
+
+  .mobile-search-controls .mobile-search-input {
+    width: 100%;
+  }
+
+  .listings-container:has(#filters.expanded) .mobile-search-controls,
+  .listings-container:has(.filter-state-bar:not(.is-hidden)) .mobile-search-controls {
+    margin-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .mobile-search-controls + #filters + .filter-state-bar {
+    margin-top: -1px;
+    border-radius: 0 0 10px 10px;
+    border-top: 1px dashed #d2e3d2;
+    box-shadow: 0 2px 12px rgba(44,122,44,0.07);
+  }
+
+  #filters.expanded {
+    margin-top: -1px;
+    border-top: 1px dashed #d2e3d2;
+    border-radius: 0;
+  }
+
+  /* Keep only one free-text search input on mobile: the top compact bar. */
+  #filters .search-group {
+    display: none;
+  }
+
+  /* If status bar is hidden, expanded filters become the bottom card edge. */
+  .listings-container:has(#filters.expanded + .filter-state-bar.is-hidden) #filters.expanded {
+    border-radius: 0 0 10px 10px;
+    margin-bottom: 8px;
   }
 }
 

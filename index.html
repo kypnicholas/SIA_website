@@ -49,6 +49,12 @@
   <main>
 
     <div class="listings-container">
+      <div id="mobileSearchControls" class="mobile-search-controls" aria-label="Mobile search controls">
+        <label for="mobileFilterSearch" class="visually-hidden">Search listings</label>
+        <input type="text" id="mobileFilterSearch" class="search-input mobile-search-input" placeholder="Search by title, location, notes, ID...">
+        <button type="button" id="mobileMoreFiltersBtn" class="mobile-more-filters-btn" aria-expanded="false" aria-controls="filters">More search options</button>
+      </div>
+
       <button id="filtersToggleBtn" class="filters-toggle-btn accordion-header" aria-expanded="false" aria-controls="filters">
         <span class="accordion-label">Show Filters</span>
         <span class="accordion-chevron" aria-hidden="true">&#9662;</span>

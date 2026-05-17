@@ -2,24 +2,49 @@
 document.addEventListener('DOMContentLoaded', function() {
   const filters = document.getElementById('filters');
   const toggleBtn = document.getElementById('filtersToggleBtn');
-  if (filters && toggleBtn) {
-    const label = toggleBtn.querySelector('.accordion-label');
+  const mobileMoreFiltersBtn = document.getElementById('mobileMoreFiltersBtn');
+  const mobileSearchInput = document.getElementById('mobileFilterSearch');
+
+  if (filters) {
+    const label = toggleBtn ? toggleBtn.querySelector('.accordion-label') : null;
     function setExpanded(expanded) {
       if (expanded) {
         filters.classList.add('expanded');
-        toggleBtn.setAttribute('aria-expanded', 'true');
-        if (label) label.textContent = 'Hide Filters';
       } else {
         filters.classList.remove('expanded');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        if (label) label.textContent = 'Show Filters';
       }
+
+      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      if (mobileMoreFiltersBtn) {
+        mobileMoreFiltersBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        mobileMoreFiltersBtn.textContent = expanded ? 'Hide extra search options' : 'More search options';
+      }
+      if (label) label.textContent = expanded ? 'Hide Filters' : 'Show Filters';
     }
+
     const desktopView = window.matchMedia('(min-width: 900px)').matches;
     setExpanded(desktopView);
-    toggleBtn.addEventListener('click', function() {
-      setExpanded(!filters.classList.contains('expanded'));
-    });
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        setExpanded(!filters.classList.contains('expanded'));
+      });
+    }
+
+    if (mobileMoreFiltersBtn) {
+      mobileMoreFiltersBtn.addEventListener('click', function() {
+        setExpanded(!filters.classList.contains('expanded'));
+      });
+    }
+
+    if (mobileSearchInput) {
+      mobileSearchInput.value = filterState.search || '';
+      mobileSearchInput.addEventListener('input', function() {
+        filterState.search = mobileSearchInput.value.trim();
+        syncSearchInputValues(filterState.search || '');
+        applyFilters();
+      });
+    }
   }
 });
 // Module-level state
@@ -652,7 +677,18 @@ function readFiltersFromURL() {
   if (params.has('priceMin')) filterState.priceMin = parseFloat(params.get('priceMin'));
   if (params.has('priceMax')) filterState.priceMax = parseFloat(params.get('priceMax'));
   if (params.has('search'))   filterState.search   = params.get('search');
+  syncSearchInputValues(filterState.search || '');
 }
+
+function syncSearchInputValues(value) {
+  const safeValue = String(value || '');
+  const filterSearchInput = document.getElementById('filterSearch');
+  const mobileSearchInput = document.getElementById('mobileFilterSearch');
+
+  if (filterSearchInput && filterSearchInput.value !== safeValue) filterSearchInput.value = safeValue;
+  if (mobileSearchInput && mobileSearchInput.value !== safeValue) mobileSearchInput.value = safeValue;
+}
+
 function writeFiltersToURL() {
   const params = new URLSearchParams();
   if (filterState.location) params.set('location', filterState.location);
@@ -766,15 +802,22 @@ function buildSearchMatchSummary(matchGroups) {
 function renderFilterStateBar(currentCount, totalCount, searchSummary = []) {
   if (!filterStateBarEl) return;
 
+  const hasSearch = String(filterState.search || '').trim().length > 0;
+  if (!hasSearch) {
+    filterStateBarEl.classList.add('is-hidden');
+    filterStateBarEl.innerHTML = '';
+    return;
+  }
+
+  filterStateBarEl.classList.remove('is-hidden');
+
   const active = getActiveFilterDescriptors();
 
   const chipsHtml = active.length
     ? active.map(item => `<button type="button" class="filter-state-chip" data-filter-key="${escapeHtml(item.key)}" aria-label="Remove ${escapeHtml(item.label)}">${escapeHtml(item.label)} <span aria-hidden="true">x</span></button>`).join('')
     : '<span class="filter-state-none">No active filters</span>';
 
-  const searchSummaryHtml = String(filterState.search || '').trim()
-    ? `<div class="filter-search-match-row"><span class="filter-search-match-label">Search matches:</span><div class="filter-search-match-list">${searchSummary.length ? searchSummary.map(entry => `<span class="filter-search-match-chip"><strong>${escapeHtml(entry.label)}</strong> = ${escapeHtml(entry.value)} (${entry.count})</span>`).join('') : '<span class="filter-search-match-empty">No field/value hint in current results</span>'}</div></div>`
-    : '';
+  const searchSummaryHtml = `<div class="filter-search-match-row"><span class="filter-search-match-label">Search matches:</span><div class="filter-search-match-list">${searchSummary.length ? searchSummary.map(entry => `<span class="filter-search-match-chip"><strong>${escapeHtml(entry.label)}</strong> = ${escapeHtml(entry.value)} (${entry.count})</span>`).join('') : '<span class="filter-search-match-empty">No field/value hint in current results</span>'}</div></div>`;
 
   filterStateBarEl.innerHTML = `
     <div class="filter-state-count">Showing <strong>${currentCount}</strong> of <strong>${totalCount}</strong> plots</div>
@@ -964,6 +1007,7 @@ function renderFilters(data) {
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         filterState.search = searchInput.value.trim();
+        syncSearchInputValues(filterState.search || '');
         applyFilters();
       });
     }
@@ -1119,6 +1163,7 @@ function renderFilters(data) {
 }
 
 function applyFilters() {
+  syncSearchInputValues(filterState.search || '');
   const areaMinVal = parseFloat(document.getElementById('filterAreaMinInput')?.value);
   const areaMaxVal = parseFloat(document.getElementById('filterAreaMaxInput')?.value);
   const locVal = document.getElementById('filterLocation')?.value || '';
