@@ -58,6 +58,10 @@
 .site-header .site-subheader-desc {
   position: relative;
   z-index: 3;
+  max-width: 760px;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
 }
 .site-header .site-subheader-close {
   font-style: italic;
@@ -782,6 +786,8 @@ body{
   font-size: 2.1rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  line-height: 1.16;
+  max-width: 760px;
   color: #fff !important;
   text-shadow: 0 2px 12px rgba(0,0,0,0.28), 0 1px 0 #2228;
   padding: 0.2em 0.5em;
@@ -1353,6 +1359,10 @@ body{
 }
 .contact-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 .whatsapp-btn {
   background: #25d366;
@@ -1373,6 +1383,11 @@ body{
   background: #1da851;
   box-shadow: 0 4px 16px rgba(37,211,102,0.28);
 }
+.contact .whatsapp-btn,
+.contact .whatsapp-btn:hover,
+.contact .whatsapp-btn:focus {
+  color: #fff;
+}
 .contact h2::before {
   content: '';
   display: inline-block;
@@ -1382,14 +1397,30 @@ body{
   background: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="24" height="16" rx="3" stroke="%232b7a2b" stroke-width="2" fill="%23f8fdf8"/><path d="M4 8l12 10 12-10" stroke="%232b7a2b" stroke-width="1.5" fill="none"/></svg>') no-repeat center/contain;
   vertical-align: middle;
 }
+.contact--cta h2::before {
+  content: none;
+}
 .contact a {
   color: #2b7a2b;
   text-decoration: underline dotted;
   transition: color 0.18s;
 }
+.contact .contact-actions a {
+  text-decoration: none;
+}
 .contact a:hover, .contact a:focus {
   color: #225722;
   text-decoration: underline solid;
+}
+.contact .contact-actions a:hover,
+.contact .contact-actions a:focus {
+  text-decoration: none;
+}
+.contact-call-link {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2b7a2b;
+  padding: 7px 2px;
 }
 .contact p {
   margin: 0 0 8px 0;
@@ -1397,12 +1428,13 @@ body{
 }
 
 .site-footer{
-  padding-top: 22px;
-  padding-bottom: 22px;
+  padding-top: 18px;
+  padding-bottom: 18px;
   background: var(--accent);
   color: #fff;
   text-align: left;
-  font-size: 1.08rem;
+  font-size: 0.96rem;
+  line-height: 1.5;
   letter-spacing: 0.01em;
   border-top: 1.5px solid #236423;
   box-shadow: 0 -2px 12px rgba(44,122,44,0.06);
@@ -1417,6 +1449,14 @@ body{
 .site-footer a:hover, .site-footer a:focus {
   color: #e0ffe0;
   text-decoration: underline solid;
+}
+.site-footer p {
+  margin: 0;
+}
+.site-footer .footer-verification-note {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.9);
 }
 
 
