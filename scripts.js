@@ -1350,9 +1350,17 @@ function renderListings(data){
       caution: '!'
     };
 
+    const mapQuery = (item.latitude && item.longitude)
+      ? `${item.latitude},${item.longitude}`
+      : `${item.location || ''} ${item.title || ''} Cyprus`.trim();
+    const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery || 'Cyprus')}`;
+
     card.innerHTML = `
       <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
-      <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
+      <div class="card-image-wrap">
+        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
+        <a href="${escapeHtml(mapHref)}" target="_blank" rel="noopener noreferrer" title="Open in Google Maps" class="card-map-pill" aria-label="Open ${escapeHtml(item.title || 'listing')} in Google Maps"><span class="card-map-pill-label">Open in maps</span></a>
+      </div>
       <div class="card-body">
         <div class="card-title-row">
           <h3 class="card-title">${escapeHtml(item.title)}</h3>
@@ -1376,9 +1384,8 @@ function renderListings(data){
         <div class="card-actions">
           <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
           <div class="card-quick-actions">
-            <a href="${escapeHtml(enquiry.mailtoHref)}" class="button button-secondary button-compact button-with-icon" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}"><span class="cta-icon">${svgMailMini()}</span><span class="cta-label-desktop">Email</span><span class="cta-label-mobile">Mail</span></a>
-            <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-compact button-with-icon" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}"><span class="cta-icon">${svgWhatsAppMini()}</span><span class="cta-label-desktop">WhatsApp</span><span class="cta-label-mobile">WA</span></a>
-            ${(item.latitude && item.longitude) ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.latitude + ',' + item.longitude)}" target="_blank" rel="noopener noreferrer" title="View on Google Maps" class="map-pin-link"><span class="map-pin-icon">📌</span></a>` : ''}
+            <a href="${escapeHtml(enquiry.mailtoHref)}" class="card-action-icon-link card-action-icon-link--email" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}" title="Email"><span class="cta-icon">${svgMailMini()}</span></a>
+            <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="card-action-icon-link card-action-icon-link--whatsapp" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}" title="WhatsApp"><span class="cta-icon">${svgWhatsAppMini()}</span></a>
           </div>
         </div>
       </div>
