@@ -778,9 +778,7 @@ body{
 
 
 .site-header{
-  /* Once you have header_long.webp, replace the url() below with:
-     image-set(url('website_images/header_long.webp') type('image/webp'), url('website_images/header_long.png') type('image/png')) */
-  background: url('website_images/header_long.png') center center/cover no-repeat;
+  background: url('website_images/header_long.webp') center center/cover no-repeat;
   color: #fff;
   padding-top: 56px;
   padding-bottom: 120px;
