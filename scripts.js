@@ -40,9 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mobileSearchInput) {
       mobileSearchInput.value = filterState.search || '';
       mobileSearchInput.addEventListener('input', function() {
-        filterState.search = mobileSearchInput.value.trim();
-        syncSearchInputValues(filterState.search || '');
-        applyFilters();
+        scheduleSearchApply(mobileSearchInput.value);
       });
     }
   }
@@ -80,8 +78,75 @@ const modalActions = document.getElementById('modalActions');
 const yearEl = document.getElementById('year');
 const DEFAULT_CONTACT_EMAIL = 'kypmaria@cytanet.com.cy';
 const DEFAULT_CONTACT_PHONE = '35799697061';
+const SEARCH_DEBOUNCE_MS = 180;
+const PDF_HTML2CANVAS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+const PDF_HTML2CANVAS_INTEGRITY = 'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H';
+const PDF_JSPDF_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+const PDF_JSPDF_INTEGRITY = 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';
+const externalScriptLoads = new Map();
+let searchDebounceTimer = null;
 
 yearEl.textContent = new Date().getFullYear();
+
+function scheduleSearchApply(rawValue) {
+  filterState.search = String(rawValue || '').trim();
+  syncSearchInputValues(filterState.search || '');
+
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+
+  searchDebounceTimer = setTimeout(() => {
+    searchDebounceTimer = null;
+    applyFilters();
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+function clearPendingSearchApply() {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+}
+
+function loadExternalScriptOnce(src, integrity) {
+  if (externalScriptLoads.has(src)) return externalScriptLoads.get(src);
+
+  const pending = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    if (integrity) {
+      script.integrity = integrity;
+      script.crossOrigin = 'anonymous';
+    }
+
+    script.onload = () => resolve();
+    script.onerror = () => {
+      externalScriptLoads.delete(src);
+      reject(new Error(`Failed to load external script: ${src}`));
+    };
+
+    document.head.appendChild(script);
+  });
+
+  externalScriptLoads.set(src, pending);
+  return pending;
+}
+
+async function ensurePdfLibrariesLoaded() {
+  if (window.html2canvas && window.jspdf && window.jspdf.jsPDF) return;
+
+  await Promise.all([
+    loadExternalScriptOnce(PDF_HTML2CANVAS_SRC, PDF_HTML2CANVAS_INTEGRITY),
+    loadExternalScriptOnce(PDF_JSPDF_SRC, PDF_JSPDF_INTEGRITY)
+  ]);
+
+  if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('PDF libraries loaded but not available in window scope.');
+  }
+}
 
 
 // Inline SVG icon functions (must be defined before use)
@@ -1006,9 +1071,7 @@ function renderFilters(data) {
     const searchInput = document.getElementById('filterSearch');
     if (searchInput) {
       searchInput.addEventListener('input', () => {
-        filterState.search = searchInput.value.trim();
-        syncSearchInputValues(filterState.search || '');
-        applyFilters();
+        scheduleSearchApply(searchInput.value);
       });
     }
   }, 0);
@@ -1163,6 +1226,7 @@ function renderFilters(data) {
 }
 
 function applyFilters() {
+  clearPendingSearchApply();
   syncSearchInputValues(filterState.search || '');
   const areaMinVal = parseFloat(document.getElementById('filterAreaMinInput')?.value);
   const areaMaxVal = parseFloat(document.getElementById('filterAreaMaxInput')?.value);
@@ -1425,15 +1489,30 @@ function openModal(item){
       <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-with-icon"><span class="cta-icon">${svgWhatsAppMini()}</span>WhatsApp This Plot</a>
     `;
   }
-  // Attach PDF export event listener (ensure button exists)
+
+  // Attach PDF export event listener and lazy-load dependencies only when needed.
   const pdfBtn = document.getElementById('downloadPdfBtn');
-  if (pdfBtn && window.html2canvas && window.jspdf) {
+  const pdfBtnLabel = pdfBtn ? pdfBtn.querySelector('.modal-pdf-btn-label') : null;
+  const setPdfButtonState = (label, isBusy) => {
+    if (!pdfBtn) return;
+    if (pdfBtnLabel) pdfBtnLabel.textContent = label;
+    pdfBtn.disabled = !!isBusy;
+    pdfBtn.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+  };
+
+  if (pdfBtn) {
+    setPdfButtonState('Download PDF', false);
     pdfBtn.onclick = async function() {
-      pdfBtn.style.display = 'none';
-      await new Promise(r => setTimeout(r, 100));
+      setPdfButtonState('Preparing PDF...', true);
       const modalContent = document.querySelector('.modal-content');
-      if (!modalContent) { pdfBtn.style.display = ''; return; }
-      html2canvas(modalContent, { scale: 2, useCORS: true }).then(canvas => {
+      if (!modalContent) {
+        setPdfButtonState('Download PDF', false);
+        return;
+      }
+
+      try {
+        await ensurePdfLibrariesLoaded();
+        const canvas = await window.html2canvas(modalContent, { scale: 2, useCORS: true });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
         const pageWidth = pdf.internal.pageSize.getWidth();
@@ -1450,11 +1529,11 @@ function openModal(item){
         }
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
         pdf.save((modalTitle.textContent || 'listing') + '.pdf');
-        pdfBtn.style.display = '';
-      }).catch(err => {
+      } catch (err) {
         console.error('PDF export failed', err);
-        pdfBtn.style.display = '';
-      });
+      } finally {
+        setPdfButtonState('Download PDF', false);
+      }
     };
   }
 
