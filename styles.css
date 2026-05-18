@@ -78,6 +78,8 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 22px;
+  min-height: 72px;
+  align-content: flex-start;
   position: relative;
   z-index: 3;
 }
@@ -361,6 +363,10 @@
 }
 
 @media (max-width: 899px) {
+  .hero-stats {
+    min-height: 98px;
+  }
+
   #filtersToggleBtn {
     display: none;
   }
@@ -837,12 +843,14 @@ body{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 18px;
+  min-height: 520px;
   margin: 18px 0 36px;
 }
 
 @media (min-width: 900px) {
   .listings {
     grid-template-columns: repeat(4, 1fr);
+    min-height: 430px;
   }
 }
 
