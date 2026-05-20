@@ -201,6 +201,72 @@ function parsePrice(priceStr) {
   return match ? parseFloat(match[1]) : NaN;
 }
 
+function buildImageFallbackCandidates(imagePath) {
+  const source = String(imagePath || '').trim();
+  if (!source) return [];
+
+  const candidates = [];
+  const addCandidate = (value) => {
+    if (!value || candidates.includes(value)) return;
+    candidates.push(value);
+  };
+
+  addCandidate(source);
+
+  const match = source.match(/^(.*?)(\.[a-zA-Z0-9]+)(\?.*)?$/);
+  if (!match) {
+    addCandidate(`${source}.webp`);
+    addCandidate(`${source}.png`);
+    return candidates;
+  }
+
+  const base = match[1];
+  const ext = match[2].toLowerCase();
+  const query = match[3] || '';
+
+  if (ext !== '.webp') addCandidate(`${base}.webp${query}`);
+  if (ext !== '.png') addCandidate(`${base}.png${query}`);
+  if (ext !== '.jpg') addCandidate(`${base}.jpg${query}`);
+  if (ext !== '.jpeg') addCandidate(`${base}.jpeg${query}`);
+
+  return candidates;
+}
+
+function setImageSourceWithFallback(imgEl, imagePath) {
+  if (!imgEl) return;
+
+  const candidates = buildImageFallbackCandidates(imagePath);
+  let candidateIndex = 0;
+
+  if (imgEl._fallbackErrorHandler) {
+    imgEl.removeEventListener('error', imgEl._fallbackErrorHandler);
+    imgEl._fallbackErrorHandler = null;
+  }
+
+  const onError = () => {
+    if (candidateIndex < candidates.length) {
+      imgEl.src = candidates[candidateIndex];
+      candidateIndex += 1;
+      return;
+    }
+    imgEl.removeEventListener('error', onError);
+    imgEl._fallbackErrorHandler = null;
+    imgEl.src = PLACEHOLDER_IMG;
+  };
+
+  imgEl._fallbackErrorHandler = onError;
+  imgEl.addEventListener('error', onError);
+
+  if (candidateIndex < candidates.length) {
+    imgEl.src = candidates[candidateIndex];
+    candidateIndex += 1;
+  } else {
+    imgEl.removeEventListener('error', onError);
+    imgEl._fallbackErrorHandler = null;
+    imgEl.src = PLACEHOLDER_IMG;
+  }
+}
+
 function isValidEmail(email) {
   if (!email) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
@@ -1422,7 +1488,7 @@ function renderListings(data){
     card.innerHTML = `
       <div class="card-status-sticker card-status-sticker--${escapeHtml((item.status || '').toLowerCase())}">${escapeHtml(item.status || '')}</div>
       <div class="card-image-wrap">
-        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
+        <img src="" alt="${escapeHtml(item.imageAlt || item.title)}" loading="lazy" width="800" height="600" />
         <a href="${escapeHtml(mapHref)}" target="_blank" rel="noopener noreferrer" title="Open in Google Maps" class="card-map-pill" aria-label="Open ${escapeHtml(item.title || 'listing')} in Google Maps"><span class="card-map-pill-label">Open in maps</span></a>
       </div>
       <div class="card-body">
@@ -1456,9 +1522,8 @@ function renderListings(data){
     `;
     listingsEl.appendChild(card);
 
-    // Replace broken images with an inline SVG placeholder — no extra network request
     const img = card.querySelector('img');
-    img.addEventListener('error', () => { img.src = PLACEHOLDER_IMG; }, { once: true });
+    setImageSourceWithFallback(img, item.image);
 
     const qualityTrigger = card.querySelector('.quality-chip-trigger');
     if (qualityTrigger) attachQualityTooltipTriggerListeners(qualityTrigger);
@@ -1471,8 +1536,8 @@ function renderListings(data){
 function openModal(item){
   const enquiry = buildEnquiryLinks(item);
   modalTitle.textContent = item.title;
-  modalImage.src = item.image;
   modalImage.alt = item.imageAlt || item.title;
+  setImageSourceWithFallback(modalImage, item.image);
   modalDesc.textContent = item.description;
   modalDetails.innerHTML = `
     <li><span class="icon-attr" title="Area">${svgArea()}</span> ${escapeHtml(item.size)}</li>
