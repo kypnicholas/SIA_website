@@ -85,6 +85,7 @@ const PDF_JSPDF_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.
 const PDF_JSPDF_INTEGRITY = 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';
 const externalScriptLoads = new Map();
 let searchDebounceTimer = null;
+let dataProtectionNoticeTimer = null;
 
 yearEl.textContent = new Date().getFullYear();
 
@@ -1360,6 +1361,72 @@ function renderHeroStats(data) {
   `;
 }
 
+function flashDataProtectionNotice() {
+  const noticeEl = document.getElementById('dataProtectionNotice') || document.getElementById('verificationFooterNote');
+  if (!noticeEl) return;
+
+  noticeEl.classList.add('is-visible');
+  if (dataProtectionNoticeTimer) clearTimeout(dataProtectionNoticeTimer);
+
+  dataProtectionNoticeTimer = setTimeout(() => {
+    noticeEl.classList.remove('is-visible');
+    dataProtectionNoticeTimer = null;
+  }, 2200);
+}
+
+function isNodeInsideProtectedListingData(node) {
+  if (!node) return false;
+
+  const el = node instanceof Element ? node : node.parentElement;
+  if (!el) return false;
+
+  return Boolean(
+    el.closest('#listings') ||
+    el.closest('#modalDesc') ||
+    el.closest('#modalDetails')
+  );
+}
+
+function setupDataProtectionGuards() {
+  ['#listings', '#modalDesc', '#modalDetails'].forEach((selector) => {
+    const protectedEl = document.querySelector(selector);
+    if (protectedEl) protectedEl.classList.add('copy-protected');
+  });
+
+  // Deter casual copying of listing text from cards and modal details.
+  ['copy', 'cut'].forEach((eventName) => {
+    document.addEventListener(eventName, (event) => {
+      const selection = window.getSelection();
+      const selectionNode = (selection && selection.rangeCount > 0) ? selection.anchorNode : null;
+
+      if (!isNodeInsideProtectedListingData(event.target) && !isNodeInsideProtectedListingData(selectionNode)) return;
+
+      event.preventDefault();
+      flashDataProtectionNotice();
+    });
+  });
+
+  // Prevent drag-and-drop image export from listing/media areas.
+  document.addEventListener('dragstart', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLImageElement)) return;
+    if (!target.closest('#listings') && !target.closest('.modal-hero-media')) return;
+
+    event.preventDefault();
+    flashDataProtectionNotice();
+  });
+
+  // Reduce right-click save options on listing images.
+  document.addEventListener('contextmenu', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest('#listings img, .modal-hero-media img')) return;
+
+    event.preventDefault();
+    flashDataProtectionNotice();
+  });
+}
+
 async function loadListings(){
   showSkeleton();        // show shimmer cards immediately while fetch is in-flight
   readFiltersFromURL();  // restore any filter state from the URL before rendering
@@ -1654,5 +1721,6 @@ function escapeHtml(str){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+  setupDataProtectionGuards();
 loadListings();
 

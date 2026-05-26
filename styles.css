@@ -1492,6 +1492,31 @@ body{
   font-size: 0.9rem;
   color: rgba(255,255,255,0.9);
 }
+.site-footer .footer-verification-note.is-visible {
+  background: rgba(255, 255, 255, 0.18);
+  border-left: 2px solid rgba(255,255,255,0.9);
+  padding: 4px 8px;
+}
+.site-footer .footer-data-protection-note {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.95);
+  padding: 4px 8px;
+  border-left: 2px solid rgba(255,255,255,0.55);
+  background: rgba(18, 68, 18, 0.28);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.site-footer .footer-data-protection-note.is-visible {
+  background: rgba(255, 255, 255, 0.22);
+  border-left-color: rgba(255,255,255,0.95);
+}
+
+/* Prevent easy text selection for sensitive listing data blocks. */
+.copy-protected,
+.copy-protected * {
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 
 /* Modal */
