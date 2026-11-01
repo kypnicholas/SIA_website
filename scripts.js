@@ -1,29 +1,52 @@
 // Accordion-style filters logic
+let setFiltersExpanded = () => {};
+
+function isDesktopViewport() {
+  return window.matchMedia('(min-width: 900px)').matches;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const filters = document.getElementById('filters');
   const toggleBtn = document.getElementById('filtersToggleBtn');
   const mobileMoreFiltersBtn = document.getElementById('mobileMoreFiltersBtn');
   const mobileSearchInput = document.getElementById('mobileFilterSearch');
+  const filtersBackdrop = document.getElementById('filtersBackdrop');
 
   if (filters) {
     const label = toggleBtn ? toggleBtn.querySelector('.accordion-label') : null;
     function setExpanded(expanded) {
-      if (expanded) {
+      const desktopView = isDesktopViewport();
+      const nextExpanded = desktopView ? true : !!expanded;
+
+      if (nextExpanded) {
         filters.classList.add('expanded');
       } else {
         filters.classList.remove('expanded');
       }
 
-      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
       if (mobileMoreFiltersBtn) {
-        mobileMoreFiltersBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-        mobileMoreFiltersBtn.textContent = expanded ? 'Hide extra search options' : 'More search options';
+        mobileMoreFiltersBtn.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+        mobileMoreFiltersBtn.textContent = nextExpanded ? 'Hide extra search options' : 'More search options';
       }
-      if (label) label.textContent = expanded ? 'Hide Filters' : 'Show Filters';
-    }
+      if (label) label.textContent = nextExpanded ? 'Hide Filters' : 'Show Filters';
+      document.body.classList.toggle('filters-sheet-open', !desktopView && nextExpanded);
 
-    const desktopView = window.matchMedia('(min-width: 900px)').matches;
-    setExpanded(desktopView);
+      if (filtersBackdrop) {
+        const showBackdrop = !desktopView && nextExpanded;
+        filtersBackdrop.hidden = !showBackdrop;
+        filtersBackdrop.setAttribute('aria-hidden', showBackdrop ? 'false' : 'true');
+      }
+
+      if (desktopView) {
+        document.body.style.overflow = '';
+      } else {
+        document.body.style.overflow = nextExpanded ? 'hidden' : '';
+      }
+    }
+    setFiltersExpanded = setExpanded;
+
+    setExpanded(isDesktopViewport());
 
     if (toggleBtn) {
       toggleBtn.addEventListener('click', function() {
@@ -37,12 +60,26 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    if (filtersBackdrop) {
+      filtersBackdrop.addEventListener('click', function() {
+        setExpanded(false);
+      });
+    }
+
     if (mobileSearchInput) {
       mobileSearchInput.value = filterState.search || '';
       mobileSearchInput.addEventListener('input', function() {
         scheduleSearchApply(mobileSearchInput.value);
       });
     }
+
+    window.addEventListener('resize', function() {
+      if (isDesktopViewport()) {
+        setExpanded(true);
+      } else if (filters.classList.contains('expanded')) {
+        setExpanded(false);
+      }
+    });
   }
 });
 // Module-level state
@@ -76,8 +113,10 @@ const modalDesc = document.getElementById('modalDesc');
 const modalDetails = document.getElementById('modalDetails');
 const modalActions = document.getElementById('modalActions');
 const yearEl = document.getElementById('year');
+const lastUpdatedLabelEl = document.getElementById('lastUpdatedLabel');
 const DEFAULT_CONTACT_EMAIL = 'kypmaria@cytanet.com.cy';
 const DEFAULT_CONTACT_PHONE = '35799697061';
+const FAVORITES_STORAGE_KEY = 'siaListingsShortlist';
 const SEARCH_DEBOUNCE_MS = 180;
 const PDF_HTML2CANVAS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 const PDF_HTML2CANVAS_INTEGRITY = 'sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H';
@@ -86,8 +125,10 @@ const PDF_JSPDF_INTEGRITY = 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75Fdtrwh
 const externalScriptLoads = new Map();
 let searchDebounceTimer = null;
 let dataProtectionNoticeTimer = null;
+let favoriteListingIds = new Set();
 
 yearEl.textContent = new Date().getFullYear();
+favoriteListingIds = loadFavoriteListingIds();
 
 function scheduleSearchApply(rawValue) {
   filterState.search = String(rawValue || '').trim();
@@ -109,6 +150,52 @@ function clearPendingSearchApply() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = null;
   }
+}
+
+function loadFavoriteListingIds() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.map(id => String(id).trim()).filter(Boolean));
+  } catch (error) {
+    console.warn('Unable to read shortlist from localStorage.', error);
+    return new Set();
+  }
+}
+
+function saveFavoriteListingIds() {
+  try {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favoriteListingIds)));
+  } catch (error) {
+    console.warn('Unable to save shortlist to localStorage.', error);
+  }
+}
+
+function isListingShortlisted(id) {
+  return favoriteListingIds.has(String(id));
+}
+
+function toggleListingShortlist(id) {
+  const key = String(id);
+  if (favoriteListingIds.has(key)) {
+    favoriteListingIds.delete(key);
+  } else {
+    favoriteListingIds.add(key);
+  }
+  saveFavoriteListingIds();
+}
+
+function setLastUpdatedLabel(date) {
+  if (!lastUpdatedLabelEl) return;
+  const sourceDate = date instanceof Date && !Number.isNaN(date.valueOf()) ? date : new Date();
+  const formatted = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(sourceDate);
+  lastUpdatedLabelEl.textContent = formatted;
 }
 
 function loadExternalScriptOnce(src, integrity) {
@@ -809,6 +896,7 @@ function readFiltersFromURL() {
   if (params.has('priceMin')) filterState.priceMin = parseFloat(params.get('priceMin'));
   if (params.has('priceMax')) filterState.priceMax = parseFloat(params.get('priceMax'));
   if (params.has('search'))   filterState.search   = params.get('search');
+  if (params.get('shortlist') === '1') filterState.shortlistOnly = true;
   syncSearchInputValues(filterState.search || '');
 }
 
@@ -830,6 +918,7 @@ function writeFiltersToURL() {
   if (filterState.priceMin != null) params.set('priceMin', filterState.priceMin);
   if (filterState.priceMax != null) params.set('priceMax', filterState.priceMax);
   if (filterState.search)   params.set('search',   filterState.search);
+  if (filterState.shortlistOnly) params.set('shortlist', '1');
   const qs = params.toString();
   history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
 }
@@ -859,6 +948,7 @@ function getActiveFilterDescriptors() {
   if (locationVal) descriptors.push({ key: 'location', label: `Location: ${locationVal}` });
 
   if (filterState.sort) descriptors.push({ key: 'sort', label: getSortLabel(filterState.sort) });
+  if (filterState.shortlistOnly) descriptors.push({ key: 'shortlist', label: 'Shortlist only' });
 
   const areaMinSet = Number.isFinite(filterState.areaMin) && Number.isFinite(filterBounds.areaMin) && filterState.areaMin > filterBounds.areaMin;
   const areaMaxSet = Number.isFinite(filterState.areaMax) && Number.isFinite(filterBounds.areaMax) && filterState.areaMax < filterBounds.areaMax;
@@ -883,6 +973,7 @@ function clearFilterByKey(key) {
   if (key === 'search') filterState.search = '';
   if (key === 'location') filterState.location = '';
   if (key === 'sort') filterState.sort = '';
+  if (key === 'shortlist') filterState.shortlistOnly = false;
   if (key === 'area') {
     filterState.areaMin = null;
     filterState.areaMax = null;
@@ -934,22 +1025,23 @@ function buildSearchMatchSummary(matchGroups) {
 function renderFilterStateBar(currentCount, totalCount, searchSummary = []) {
   if (!filterStateBarEl) return;
 
-  const hasSearch = String(filterState.search || '').trim().length > 0;
-  if (!hasSearch) {
+  const active = getActiveFilterDescriptors();
+  if (!active.length) {
     filterStateBarEl.classList.add('is-hidden');
     filterStateBarEl.innerHTML = '';
     return;
   }
 
   filterStateBarEl.classList.remove('is-hidden');
-
-  const active = getActiveFilterDescriptors();
+  const hasSearch = String(filterState.search || '').trim().length > 0;
 
   const chipsHtml = active.length
     ? active.map(item => `<button type="button" class="filter-state-chip" data-filter-key="${escapeHtml(item.key)}" aria-label="Remove ${escapeHtml(item.label)}">${escapeHtml(item.label)} <span aria-hidden="true">x</span></button>`).join('')
     : '<span class="filter-state-none">No active filters</span>';
 
-  const searchSummaryHtml = `<div class="filter-search-match-row"><span class="filter-search-match-label">Search matches:</span><div class="filter-search-match-list">${searchSummary.length ? searchSummary.map(entry => `<span class="filter-search-match-chip"><strong>${escapeHtml(entry.label)}</strong> = ${escapeHtml(entry.value)} (${entry.count})</span>`).join('') : '<span class="filter-search-match-empty">No field/value hint in current results</span>'}</div></div>`;
+  const searchSummaryHtml = hasSearch
+    ? `<div class="filter-search-match-row"><span class="filter-search-match-label">Search matches:</span><div class="filter-search-match-list">${searchSummary.length ? searchSummary.map(entry => `<span class="filter-search-match-chip"><strong>${escapeHtml(entry.label)}</strong> = ${escapeHtml(entry.value)} (${entry.count})</span>`).join('') : '<span class="filter-search-match-empty">No field/value hint in current results</span>'}</div></div>`
+    : '';
 
   filterStateBarEl.innerHTML = `
     <div class="filter-state-count">Showing <strong>${currentCount}</strong> of <strong>${totalCount}</strong> plots</div>
@@ -1091,6 +1183,7 @@ function renderFilters(data) {
         filterState.areaMax = parseInt(areaMaxInput.value);
         applyFilters();
         updateAreaBtnPlaceholder();
+        if (!isDesktopViewport()) setFiltersExpanded(false);
       });
     }
     const priceApplyBtn = document.getElementById('priceApplyBtn');
@@ -1113,6 +1206,7 @@ function renderFilters(data) {
         filterState.priceMax = max;
         applyFilters();
         updatePriceBtnPlaceholder();
+        if (!isDesktopViewport()) setFiltersExpanded(false);
       });
     }
     // Attach event listener to location dropdown after rendering
@@ -1165,8 +1259,13 @@ function renderFilters(data) {
   const areaMaxVal = filterState?.areaMax ?? areaMax;
   const priceMinVal = filterState?.priceMin ?? priceMin;
   const priceMaxVal = filterState?.priceMax ?? priceMax;
+  const shortlistCount = data.filter(item => isListingShortlisted(item.id)).length;
 
   filtersEl.innerHTML = `
+    <div class="filters-mobile-sheet-top">
+      <h3>Search filters</h3>
+      <button type="button" id="mobileFiltersCloseBtn" class="filters-mobile-close-btn">Close</button>
+    </div>
     <form id="filterForm" class="filter-form">
       <div class="search-group">
         <label for="filterSearch">Search:</label>
@@ -1231,6 +1330,10 @@ function renderFilters(data) {
           <option value="price-desc">Price (max first)</option>
         </select>
       </div>
+      <label class="shortlist-toggle" for="filterShortlistOnly">
+        <input type="checkbox" id="filterShortlistOnly" ${filterState.shortlistOnly ? 'checked' : ''}>
+        <span>Shortlist only (${shortlistCount})</span>
+      </label>
       <button type="reset">Reset all</button>
     </form>
   `;
@@ -1239,6 +1342,10 @@ function renderFilters(data) {
   if (_locationSelect) _locationSelect.value = filterState.location || '';
   const _sortSelect = document.getElementById('sortSelect');
   if (_sortSelect) _sortSelect.value = filterState.sort || '';
+  const mobileFiltersCloseBtn = document.getElementById('mobileFiltersCloseBtn');
+  if (mobileFiltersCloseBtn) {
+    mobileFiltersCloseBtn.addEventListener('click', () => setFiltersExpanded(false), { signal });
+  }
   // Add event listeners
   const form = document.getElementById('filterForm');
   // Area popover logic
@@ -1276,6 +1383,14 @@ function renderFilters(data) {
   const areaMaxInput = document.getElementById('filterAreaMaxInput');
   const priceMinInput = document.getElementById('filterPriceMinInput');
   const priceMaxInput = document.getElementById('filterPriceMaxInput');
+  const shortlistCheckbox = document.getElementById('filterShortlistOnly');
+  if (shortlistCheckbox) {
+    shortlistCheckbox.checked = !!filterState.shortlistOnly;
+    shortlistCheckbox.addEventListener('change', () => {
+      filterState.shortlistOnly = shortlistCheckbox.checked;
+      applyFilters();
+    }, { signal });
+  }
 
   // Optionally, add input validation or UI feedback here
   // (e.g., prevent min > max, clamp to allowed range, etc.)
@@ -1284,6 +1399,7 @@ function renderFilters(data) {
       setTimeout(() => {
         filterState = {};
         writeFiltersToURL();
+        setFiltersExpanded(isDesktopViewport());
         renderFilters(allListings);
         renderListings(allListings);
         renderFilterStateBar(allListings.length, allListings.length, []);
@@ -1301,6 +1417,8 @@ function applyFilters() {
   const priceMinVal = parseFloat(document.getElementById('filterPriceMinInput')?.value);
   const priceMaxVal = parseFloat(document.getElementById('filterPriceMaxInput')?.value);
   const sortVal = document.getElementById('sortSelect')?.value || '';
+  const shortlistOnly = !!document.getElementById('filterShortlistOnly')?.checked;
+  filterState.shortlistOnly = shortlistOnly;
   const searchQuery = normalizeSearchText(filterState.search || '');
   const searchTokens = searchQuery ? searchQuery.split(' ').filter(Boolean) : [];
 
@@ -1318,9 +1436,10 @@ function applyFilters() {
       const areaOk = (isNaN(areaMinVal) || areaNum >= areaMinVal) && (isNaN(areaMaxVal) || areaNum <= areaMaxVal);
       const priceOk = (isNaN(priceMinVal) || priceNum >= priceMinVal) && (isNaN(priceMaxVal) || priceNum <= priceMaxVal);
       const locOk = !locVal || item.location === locVal;
+      const shortlistOk = !shortlistOnly || isListingShortlisted(item.id);
       const searchOk = !searchTokens.length ||
         searchTokens.every(token => searchMatches.some(match => match.token === token));
-      return areaOk && priceOk && locOk && searchOk;
+      return areaOk && priceOk && locOk && shortlistOk && searchOk;
     })
     .sort((a, b) => {
       if (sortVal === 'size-asc') return a.areaNum - b.areaNum;
@@ -1434,6 +1553,8 @@ async function loadListings(){
     const res = await fetch('listings.json', {cache: "default"});
     if(!res.ok) throw new Error('Failed to load listings.json');
     const data = await res.json();
+    const modifiedHeader = res.headers.get('last-modified');
+    setLastUpdatedLabel(modifiedHeader ? new Date(modifiedHeader) : new Date());
     allListings = data;
     listingQualityById = buildListingQualityMap(data);
     renderHeroStats(data);
@@ -1512,16 +1633,9 @@ function renderListings(data){
     `;
     return;
   }
-  initQualityTooltipInteractions();
-  qualityTooltipContentById.clear();
-  hideQualityTooltipPortal();
   listingsEl.innerHTML = '';
-  data.forEach((item, index) => {
+  data.forEach((item) => {
     const enquiry = buildEnquiryLinks(item);
-    const quality = getListingQuality(item);
-    const safeQualityId = String(item.id || `listing-${index}`).replace(/[^a-zA-Z0-9_-]/g, '');
-    const qualityTooltipId = `qualityTooltip-${safeQualityId}-${index}`;
-    qualityTooltipContentById.set(qualityTooltipId, buildQualityTooltipPanel(quality));
     const card = document.createElement('article');
     card.className = 'card';
 
@@ -1541,12 +1655,6 @@ function renderListings(data){
     // Title deed short label
     const titleDeedShort = (item.titleDeed === 'Yes' || item.titleDeed === true) ? 'Yes' : 'No';
 
-    const qualityIconByLevel = {
-      verified: '✓',
-      review: 'i',
-      caution: '!'
-    };
-
     const mapQuery = (item.latitude && item.longitude)
       ? `${item.latitude},${item.longitude}`
       : `${item.location || ''} ${item.title || ''} Cyprus`.trim();
@@ -1561,12 +1669,6 @@ function renderListings(data){
       <div class="card-body">
         <div class="card-title-row">
           <h3 class="card-title">${escapeHtml(item.title)}</h3>
-          <div class="quality-chip-wrap card-title-quality">
-            <button type="button" class="quality-chip quality-chip--${escapeHtml(quality.level)} quality-chip-trigger" data-quality-tooltip-id="${escapeHtml(qualityTooltipId)}" aria-controls="qualityTooltipPortal" aria-expanded="false" aria-label="${escapeHtml(quality.label)}">
-              <span class="quality-chip-icon quality-chip-icon--${escapeHtml(quality.level)}" aria-hidden="true">${escapeHtml(qualityIconByLevel[quality.level] || 'i')}</span>
-              <span class="quality-chip-text">${escapeHtml(quality.label)}</span>
-            </button>
-          </div>
         </div>
         <div class="card-facts">
           <span class="card-fact"><span class="attr-text">Deed: ${escapeHtml(titleDeedShort)}</span></span>
@@ -1579,7 +1681,10 @@ function renderListings(data){
         </div>
         <div class="card-desc">${escapeHtml(item.shortDescription)}</div>
         <div class="card-actions">
-          <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
+          <div class="card-primary-actions">
+            <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
+            <button type="button" class="button button-secondary favorite-toggle" data-shortlist-id="${escapeHtml(item.id)}" aria-pressed="${isListingShortlisted(item.id) ? 'true' : 'false'}"></button>
+          </div>
           <div class="card-quick-actions">
             <a href="${escapeHtml(enquiry.mailtoHref)}" class="card-action-icon-link card-action-icon-link--email" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}" title="Email"><span class="cta-icon">${svgMailMini()}</span></a>
             <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="card-action-icon-link card-action-icon-link--whatsapp" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}" title="WhatsApp"><span class="cta-icon">${svgWhatsAppMini()}</span></a>
@@ -1592,11 +1697,26 @@ function renderListings(data){
     const img = card.querySelector('img');
     setImageSourceWithFallback(img, item.image);
 
-    const qualityTrigger = card.querySelector('.quality-chip-trigger');
-    if (qualityTrigger) attachQualityTooltipTriggerListeners(qualityTrigger);
+    const btn = card.querySelector('.card-primary-actions > .button[data-id]');
+    if (btn) btn.addEventListener('click', () => openModal(item));
 
-    const btn = card.querySelector('.card-actions > .button[data-id]');
-    btn.addEventListener('click', () => openModal(item));
+    const shortlistBtn = card.querySelector('.favorite-toggle');
+    if (shortlistBtn) {
+      const applyShortlistButtonState = () => {
+        const active = isListingShortlisted(item.id);
+        shortlistBtn.classList.toggle('is-active', active);
+        shortlistBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        shortlistBtn.textContent = active ? '★ Shortlisted' : '☆ Shortlist';
+      };
+
+      applyShortlistButtonState();
+      shortlistBtn.addEventListener('click', () => {
+        toggleListingShortlist(item.id);
+        applyShortlistButtonState();
+        renderFilters(allListings);
+        applyFilters();
+      });
+    }
   });
 }
 
@@ -1723,4 +1843,3 @@ function escapeHtml(str){
 }
   setupDataProtectionGuards();
 loadListings();
-

@@ -63,6 +63,7 @@
       <section id="filters" class="filters">
         <!-- Filter and sort controls will be rendered here by scripts.js -->
       </section>
+      <div id="filtersBackdrop" class="filters-backdrop" aria-hidden="true" hidden></div>
       <section id="filterStateBar" class="filter-state-bar is-hidden" aria-live="polite">
         <!-- Active filters and result count are rendered here by scripts.js -->
       </section>
@@ -109,12 +110,22 @@
     <section class="contact contact--cta" aria-labelledby="ctaHeading">
       <h2 id="ctaHeading">Interested in a plot?</h2>
       <p>Contact us directly to check availability, request documents, or arrange a visit.</p>
+      <p class="contact-last-updated">Last updated: <strong id="lastUpdatedLabel">—</strong></p>
+      <div class="contact-steps" aria-label="How to buy in 3 steps">
+        <h3>How to buy in 3 steps</h3>
+        <ol>
+          <li>Shortlist plots and contact us directly by WhatsApp, email, or phone.</li>
+          <li>Request title, planning, and map documents for your preferred plots.</li>
+          <li>Complete legal due diligence with your advisor before any agreement.</li>
+        </ol>
+      </div>
       <div class="contact-actions">
         <a href="https://wa.me/35799697061" target="_blank" rel="noopener noreferrer" class="button whatsapp-btn button-with-icon"><span class="cta-icon"><svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2.2C5.69 2.2 2.2 5.62 2.2 9.85c0 1.53.47 2.95 1.28 4.14l-.83 3.81 3.93-.79A7.9 7.9 0 0 0 10 17.5c4.31 0 7.8-3.42 7.8-7.65S14.31 2.2 10 2.2z" stroke="currentColor" stroke-width="1.6"/><path d="M7.15 7.22c.14-.3.3-.31.45-.31h.39c.12 0 .29.04.43.34.14.31.47 1.14.51 1.22.04.08.07.18.01.29-.06.11-.09.18-.18.28-.09.1-.19.22-.27.29-.09.08-.18.16-.08.31.1.15.45.74.96 1.2.66.59 1.2.77 1.38.85.18.08.29.07.4-.04.11-.11.47-.52.59-.7.12-.18.24-.15.41-.09.17.06 1.08.5 1.27.59.18.09.3.14.34.22.04.08.04.47-.11.93-.15.45-.85.88-1.18.93-.3.05-.67.07-1.08-.06a5.94 5.94 0 0 1-1.11-.52c-1.88-1.07-3.1-3.05-3.2-3.18-.1-.13-.77-1.01-.77-1.93 0-.92.48-1.37.65-1.56z" fill="currentColor"/></svg></span>WhatsApp</a>
         <a href="mailto:kypmaria@cytanet.com.cy" class="button button-secondary button-with-icon"><span class="cta-icon"><svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 5l7 5.5L17 5" stroke="currentColor" stroke-width="1.7"/></svg></span>Email Us</a>
         <a href="tel:+35799697061" class="contact-call-link button-with-icon"><span class="cta-icon"><svg width="1em" height="1em" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="5" y="2" width="10" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="currentColor"/></svg></span>Call +357 99 697061</a>
       </div>
     </section>
+    <a href="#ctaHeading" id="mobileStickyContact" class="mobile-sticky-contact button button-with-icon" aria-label="Jump to contact section">Contact us</a>
   </main>
 
   <!-- Modal for details -->
@@ -152,7 +163,7 @@
 
   <footer class="site-footer">
     <div>
-      <p id="verificationFooterNote" class="footer-verification-note">Verification badges are based on automated checks and are not legal certification. <a href="disclaimer.html#legal-notice">See legal note</a>.</p>
+      <p id="verificationFooterNote" class="footer-verification-note">Listing details are indicative and subject to legal verification. <a href="disclaimer.html#legal-notice">See legal note</a>.</p>
       <p>
         &copy; <span id="year"></span> Christofi, Kitsiou, Kyprianou families. All rights reserved.
         &nbsp;|&nbsp;

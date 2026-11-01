@@ -104,7 +104,7 @@
   right: 10px;
   background: #fffbe7;
   color: #2b7a2b;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 600;
   padding: 2.5px 8px 2.5px 8px;
   border-radius: 0 9px 9px 9px;
@@ -262,7 +262,7 @@
 }
 .filter-search-match-label {
   color: #3f5f3f;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 .filter-search-match-list {
@@ -274,7 +274,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: #2f4f2f;
   background: #eff6ef;
   border: 1px solid #c8dcc8;
@@ -283,7 +283,7 @@
 }
 .filter-search-match-empty {
   color: #5f735f;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
 }
 
 @media (min-width: 900px) {
@@ -372,50 +372,110 @@
   }
 
   .mobile-search-controls {
+    position: sticky;
+    top: 10px;
+    z-index: 32;
     display: flex;
     flex-direction: column;
     gap: 6px;
     background: #ffffff;
     border: 1px solid #d8e6d8;
     border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(44,122,44,0.05);
+    box-shadow: 0 4px 14px rgba(44,122,44,0.11);
     padding: 10px 12px;
-    margin: 0 0 8px;
+    margin: 0 0 12px;
   }
 
   .mobile-search-controls .mobile-search-input {
     width: 100%;
+    min-height: 38px;
   }
 
-  .listings-container:has(#filters.expanded) .mobile-search-controls,
-  .listings-container:has(.filter-state-bar:not(.is-hidden)) .mobile-search-controls {
-    margin-bottom: 0;
-    border-radius: 10px 10px 0 0;
-  }
-
-  .mobile-search-controls + #filters + .filter-state-bar {
-    margin-top: -1px;
-    border-radius: 0 0 10px 10px;
-    border-top: 1px dashed #d2e3d2;
-    box-shadow: 0 2px 12px rgba(44,122,44,0.07);
+  #filters {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 42;
+    margin: 0;
+    border-radius: 14px 14px 0 0;
+    border: 1px solid #cfe1cf;
+    border-bottom: none;
+    box-shadow: 0 -10px 26px rgba(0,0,0,0.18);
+    max-height: min(82vh, 720px);
+    overflow: auto;
+    opacity: 0;
+    transform: translateY(110%);
+    pointer-events: none;
+    transition: transform 0.28s ease, opacity 0.2s ease;
   }
 
   #filters.expanded {
-    margin-top: -1px;
-    border-top: 1px dashed #d2e3d2;
-    border-radius: 0;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    padding-top: 12px;
+    padding-bottom: 14px;
+    margin-top: 0;
+    border-top: 1px solid #cfe1cf;
   }
 
-  /* Keep only one free-text search input on mobile: the top compact bar. */
+  .filters-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(8, 18, 8, 0.38);
+    backdrop-filter: blur(1px);
+  }
+
+  body.filters-sheet-open {
+    overflow: hidden;
+  }
+
+  .filters-mobile-sheet-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: -12px -20px 8px;
+    padding: 12px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border-bottom: 1px solid #e3eee3;
+  }
+
+  .filters-mobile-sheet-top h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    color: #2f5a2f;
+  }
+
+  .filters-mobile-close-btn {
+    border: 1px solid #c8dcc8;
+    background: #f4faf4;
+    border-radius: 7px;
+    color: #2f5a2f;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+
+  .filters-mobile-close-btn:hover,
+  .filters-mobile-close-btn:focus-visible {
+    background: #e8f3e8;
+    border-color: #9ec19e;
+  }
+
   #filters .search-group {
     display: none;
   }
 
-  /* If status bar is hidden, expanded filters become the bottom card edge. */
-  .listings-container:has(#filters.expanded + .filter-state-bar.is-hidden) #filters.expanded {
-    border-radius: 0 0 10px 10px;
-    margin-bottom: 8px;
+  .filter-form {
+    gap: 14px;
   }
+
 }
 
 .accordion-header {
@@ -686,6 +746,9 @@ input[type=number]#filterPriceMaxInput::-webkit-inner-spin-button {
   flex-direction: column;
   gap: 8px;
 }
+.filters-mobile-sheet-top {
+  display: none;
+}
 .filter-form {
   display: flex;
   flex-wrap: wrap;
@@ -734,6 +797,23 @@ input[type=number]#filterPriceMaxInput::-webkit-inner-spin-button {
   flex-direction: column;
   gap: 4px;
   min-width: 140px;
+}
+.shortlist-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #2b7a2b;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid #d4e5d4;
+  border-radius: 8px;
+  background: #f7fbf7;
+}
+.shortlist-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 .card-location {
   color: var(--muted);
@@ -861,12 +941,12 @@ body{
   box-shadow:var(--shadow);
   display:flex;
   flex-direction:column;
-  transition: transform 0.18s cubic-bezier(.4,1.4,.6,1), box-shadow 0.18s cubic-bezier(.4,1.4,.6,1);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .card:hover, .card:focus-within {
-  transform: scale(1.035);
-  box-shadow: 0 8px 32px rgba(44,122,44,0.18), 0 1.5px 6px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(44,122,44,0.13), 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .card img{
@@ -891,7 +971,7 @@ body{
   border: 1px solid rgba(37, 79, 43, 0.2);
   border-radius: 999px;
   padding: 3px 8px;
-  font-size: 0.66rem;
+  font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.1;
@@ -967,7 +1047,7 @@ body{
   color: #2f5332;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 0.88rem; /* chips slightly smaller than title, larger than description */
+  font-size: 0.92rem; /* chips slightly smaller than title, larger than description */
   font-weight: 550;
   flex: 0 1 auto;
   min-width: 0;
@@ -1028,7 +1108,7 @@ body{
 }
 
 @media (max-width: 420px) {
-  .card-attr, .card-fact { font-size: 0.72rem; padding: 3px 6px; }
+  .card-attr, .card-fact { font-size: 0.8rem; padding: 3px 6px; }
 }
 .quality-chip {
   display: inline-flex;
@@ -1266,8 +1346,9 @@ body{
   text-decoration: underline;
 }
 .card-meta{color:var(--muted);font-size:0.9rem;margin-bottom:8px}
-.card-desc{flex:1;margin-bottom:12px;color:#374a38;font-size:0.82rem;line-height:1.45;border-top:1px solid rgba(0,0,0,0.04);padding-top:10px;margin-top:10px}
+.card-desc{flex:1;margin-bottom:12px;color:#374a38;font-size:0.9rem;line-height:1.5;border-top:1px solid rgba(0,0,0,0.04);padding-top:10px;margin-top:10px}
 .card-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.card-primary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card-quick-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 .button{
@@ -1301,6 +1382,23 @@ body{
 }
 .button-secondary:hover{
   background:rgba(43,122,43,0.06);
+}
+.favorite-toggle {
+  background: #f4faf4;
+  color: #2f5a2f;
+  border: 1px solid #c8dfc8;
+  min-width: 116px;
+  font-weight: 600;
+}
+.favorite-toggle:hover,
+.favorite-toggle:focus-visible {
+  background: #eaf5ea;
+  border-color: #9ec29e;
+}
+.favorite-toggle.is-active {
+  background: #fff7dd;
+  border-color: #e4c66a;
+  color: #725300;
 }
 .button-whatsapp-inline{
   background:#25d366;
@@ -1459,6 +1557,51 @@ body{
 .contact p {
   margin: 0 0 8px 0;
   line-height: 1.6;
+}
+.contact-last-updated {
+  font-size: 0.92rem;
+  color: #365836;
+  margin-bottom: 10px;
+}
+.contact-steps {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #d9ead9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.contact-steps h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #244f24;
+}
+.contact-steps ol {
+  margin: 0;
+  padding-left: 18px;
+  color: #355235;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+.mobile-sticky-contact {
+  display: none;
+}
+@media (max-width: 899px) {
+  .mobile-sticky-contact {
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 34;
+    display: inline-flex;
+    min-height: 42px;
+    padding: 0 14px;
+    box-shadow: 0 6px 16px rgba(44,122,44,0.3);
+  }
+
+  body.filters-sheet-open .mobile-sticky-contact {
+    display: none;
+  }
 }
 
 .site-footer{
@@ -1803,7 +1946,7 @@ body{
   .card-map-pill {
     right: 6px;
     bottom: 6px;
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     padding: 2px 7px;
   }
   .modal-content{padding:12px}
