@@ -1332,7 +1332,7 @@ function renderFilters(data) {
       </div>
       <label class="shortlist-toggle" for="filterShortlistOnly">
         <input type="checkbox" id="filterShortlistOnly" ${filterState.shortlistOnly ? 'checked' : ''}>
-        <span>Shortlist only (${shortlistCount})</span>
+        <span>Shortlist (${shortlistCount})</span>
       </label>
       <button type="reset">Reset all</button>
     </form>

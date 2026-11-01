@@ -341,12 +341,21 @@
 }
 
 .mobile-more-filters-btn::after {
-  content: "☰";
-  font-size: 0.85rem;
-  line-height: 1;
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 8px;
   color: #5f7c5f;
-  transition: color 0.2s ease;
   margin-left: 2px;
+  background: linear-gradient(
+    to bottom,
+    currentColor 0 1px,
+    transparent 1px 3px,
+    currentColor 3px 4px,
+    transparent 4px 6px,
+    currentColor 6px 7px,
+    transparent 7px
+  );
 }
 
 .mobile-more-filters-btn:hover,
@@ -798,22 +807,42 @@ input[type=number]#filterPriceMaxInput::-webkit-inner-spin-button {
   gap: 4px;
   min-width: 140px;
 }
-.shortlist-toggle {
+.filter-form label.shortlist-toggle {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-height: 36px;
   color: #2b7a2b;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 6px 10px;
-  border: 1px solid #d4e5d4;
-  border-radius: 8px;
-  background: #f7fbf7;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 7px 10px;
+  border: 1px solid #c2e0c2;
+  border-radius: 6px;
+  background: #f8fdf8;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.shortlist-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+.filter-form label.shortlist-toggle:hover {
+  border-color: #9dc79d;
+  background: #f3faf3;
+}
+.filter-form label.shortlist-toggle:focus-within {
+  outline: 2px solid rgba(43, 122, 43, 0.2);
+  outline-offset: 1px;
+}
+.filter-form label.shortlist-toggle input[type="checkbox"] {
+  appearance: auto;
+  accent-color: var(--accent);
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .card-location {
   color: var(--muted);
