@@ -1676,12 +1676,26 @@ body{
   color: rgba(255,255,255,0.9);
 }
 .site-footer .footer-credit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid rgba(255,255,255,0.24);
   color: rgba(255,255,255,0.84);
   font-size: 0.88rem;
   text-align: right;
+}
+.site-footer .footer-credit a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.site-footer .footer-credit img {
+  display: block;
+  width: 120px;
+  height: auto;
 }
 .site-footer .footer-verification-note {
   margin: 0 0 12px;
@@ -1719,6 +1733,7 @@ body{
     gap: 8px 16px;
   }
   .site-footer .footer-credit {
+    justify-content: flex-start;
     text-align: left;
   }
 }
