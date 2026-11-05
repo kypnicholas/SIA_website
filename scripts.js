@@ -114,8 +114,8 @@ const modalDetails = document.getElementById('modalDetails');
 const modalActions = document.getElementById('modalActions');
 const yearEl = document.getElementById('year');
 const lastUpdatedLabelEl = document.getElementById('lastUpdatedLabel');
-const DEFAULT_CONTACT_EMAIL = 'kypmaria@cytanet.com.cy';
-const DEFAULT_CONTACT_PHONE = '35799697061';
+const SITE_CONTACT_EMAIL = '';
+const SITE_CONTACT_PHONE = '';
 const FAVORITES_STORAGE_KEY = 'siaListingsShortlist';
 const SEARCH_DEBOUNCE_MS = 180;
 const PDF_HTML2CANVAS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
@@ -689,13 +689,13 @@ function evaluateListingQuality(item) {
   }
 
   // Contact info
-  const emailRaw = String(item.contactEmail || '').trim();
+  const emailRaw = SITE_CONTACT_EMAIL.trim();
   const emailOk = emailRaw && isValidEmail(emailRaw);
-  const phoneDigits = String(item.contactPhone || '').replace(/\D/g, '');
+  const phoneDigits = SITE_CONTACT_PHONE.replace(/\D/g, '');
   const phoneOk = phoneDigits.length >= 8;
   const contactIssues = [];
-  if (!emailOk) contactIssues.push('email');
-  if (!phoneOk) contactIssues.push('phone');
+  if (emailRaw && !emailOk) contactIssues.push('email');
+  if (SITE_CONTACT_PHONE && !phoneOk) contactIssues.push('phone');
   checks.push(qualityCheck('Contact details valid (email/phone)', contactIssues.length ? 'warn' : 'pass', contactIssues.length ? `Invalid: ${contactIssues.join(', ')}` : ''));
 
   const failCount = checks.filter(x => x.status === 'fail').length;
@@ -739,7 +739,7 @@ function getListingQuality(item) {
 
 function normalizeWhatsAppPhone(phoneRaw) {
   const digits = String(phoneRaw || '').replace(/\D/g, '');
-  if (!digits) return DEFAULT_CONTACT_PHONE;
+  if (!digits) return '';
   if (digits.startsWith('00')) return digits.slice(2);
   if (digits.startsWith('357')) return digits;
   if (digits.length === 8) return `357${digits}`;
@@ -753,8 +753,8 @@ function buildEnquiryLinks(item) {
   const listingLocation = item.location || 'N/A';
   const listingSize = item.size || 'N/A';
   const listingPrice = item.price ? `€${item.price}` : 'N/A';
-  const email = item.contactEmail || DEFAULT_CONTACT_EMAIL;
-  const waPhone = normalizeWhatsAppPhone(item.contactPhone);
+  const email = SITE_CONTACT_EMAIL.trim();
+  const waPhone = normalizeWhatsAppPhone(SITE_CONTACT_PHONE);
 
   const subject = `Enquiry: ${listingTitle} (${listingId})`;
   const message = [
@@ -773,8 +773,8 @@ function buildEnquiryLinks(item) {
   ].join('\n');
 
   return {
-    mailtoHref: `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
-    whatsappHref: `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`
+    mailtoHref: email ? `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}` : '',
+    whatsappHref: waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}` : ''
   };
 }
 
@@ -1636,6 +1636,13 @@ function renderListings(data){
   listingsEl.innerHTML = '';
   data.forEach((item) => {
     const enquiry = buildEnquiryLinks(item);
+    const quickActions = [];
+    if (enquiry.mailtoHref) {
+      quickActions.push(`<a href="${escapeHtml(enquiry.mailtoHref)}" class="card-action-icon-link card-action-icon-link--email" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}" title="Email"><span class="cta-icon">${svgMailMini()}</span></a>`);
+    }
+    if (enquiry.whatsappHref) {
+      quickActions.push(`<a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="card-action-icon-link card-action-icon-link--whatsapp" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}" title="WhatsApp"><span class="cta-icon">${svgWhatsAppMini()}</span></a>`);
+    }
     const card = document.createElement('article');
     card.className = 'card';
 
@@ -1685,10 +1692,7 @@ function renderListings(data){
             <button class="button" data-id="${escapeHtml(item.id)}">View details</button>
             <button type="button" class="button button-secondary favorite-toggle" data-shortlist-id="${escapeHtml(item.id)}" aria-pressed="${isListingShortlisted(item.id) ? 'true' : 'false'}"></button>
           </div>
-          <div class="card-quick-actions">
-            <a href="${escapeHtml(enquiry.mailtoHref)}" class="card-action-icon-link card-action-icon-link--email" aria-label="Send email enquiry for ${escapeHtml(item.title || 'listing')}" title="Email"><span class="cta-icon">${svgMailMini()}</span></a>
-            <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="card-action-icon-link card-action-icon-link--whatsapp" aria-label="Send WhatsApp enquiry for ${escapeHtml(item.title || 'listing')}" title="WhatsApp"><span class="cta-icon">${svgWhatsAppMini()}</span></a>
-          </div>
+          ${quickActions.length ? `<div class="card-quick-actions">${quickActions.join('')}</div>` : ''}
         </div>
       </div>
     `;
@@ -1722,6 +1726,16 @@ function renderListings(data){
 
 function openModal(item){
   const enquiry = buildEnquiryLinks(item);
+  const contactDetails = [];
+  const email = SITE_CONTACT_EMAIL.trim();
+  const phone = SITE_CONTACT_PHONE.trim();
+  const phoneDigits = normalizeWhatsAppPhone(phone);
+  if (phone) {
+    contactDetails.push(`<li><span class="icon-attr" title="Telephone">${svgPhone()}</span> <a href="tel:+${escapeHtml(phoneDigits)}">${escapeHtml(phone)}</a></li>`);
+  }
+  if (email) {
+    contactDetails.push(`<li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></li>`);
+  }
   modalTitle.textContent = item.title;
   modalImage.alt = item.imageAlt || item.title;
   setImageSourceWithFallback(modalImage, item.image);
@@ -1732,14 +1746,13 @@ function openModal(item){
     <li><span class="icon-attr" title="Location">${svgLocation()}</span> ${escapeHtml(item.location || '—')}</li>
   <li><span class="icon-attr" title="Title Deeds">${svgTitleDeed()}</span> Title deeds available ${svgTick(item.titleDeed === 'Yes' || item.titleDeed === true)}</li>
     <li><span class="icon-attr" title="Notes">${svgNotes()}</span> ${escapeHtml(item.notes || '—')}</li>
-    <li><span class="icon-attr" title="Telephone">${svgPhone()}</span> <a href="tel:${escapeHtml(item.contactPhone || '')}">${escapeHtml(item.contactPhone || '—')}</a></li>
-    <li><span class="icon-attr" title="Email">${svgContact()}</span> <a href="mailto:${escapeHtml(item.contactEmail || DEFAULT_CONTACT_EMAIL)}">${escapeHtml(item.contactEmail || DEFAULT_CONTACT_EMAIL)}</a></li>
+    ${contactDetails.join('')}
   `;
   if (modalActions) {
-    modalActions.innerHTML = `
-      <a href="${escapeHtml(enquiry.mailtoHref)}" class="button button-secondary button-with-icon"><span class="cta-icon">${svgMailMini()}</span>Email This Plot</a>
-      <a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-with-icon"><span class="cta-icon">${svgWhatsAppMini()}</span>WhatsApp This Plot</a>
-    `;
+    const actions = [];
+    if (enquiry.mailtoHref) actions.push(`<a href="${escapeHtml(enquiry.mailtoHref)}" class="button button-secondary button-with-icon"><span class="cta-icon">${svgMailMini()}</span>Email This Plot</a>`);
+    if (enquiry.whatsappHref) actions.push(`<a href="${escapeHtml(enquiry.whatsappHref)}" target="_blank" rel="noopener noreferrer" class="button button-whatsapp-inline button-with-icon"><span class="cta-icon">${svgWhatsAppMini()}</span>WhatsApp This Plot</a>`);
+    modalActions.innerHTML = actions.length ? actions.join('') : '<p>Contact details will be added soon.</p>';
   }
 
   // Attach PDF export event listener and lazy-load dependencies only when needed.

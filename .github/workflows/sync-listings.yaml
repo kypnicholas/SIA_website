@@ -53,7 +53,8 @@ jobs:
             exit 1
           fi
           # Pretty-print and sort keys for stable diffs
-          jq -S '.' /tmp/sheet.json > listings.json
+          # Strip private contact details before publishing the listings feed.
+          jq -S 'map(del(.contactEmail, .contactPhone))' /tmp/sheet.json > listings.json
 
       - name: Show diff (for logs)
         run: |
