@@ -1,0 +1,15 @@
+# GitHub Pages/Jekyll: keep repository-only agent guidance off the website.
+# Keep Jekyll 3.x default exclusions because a custom exclude list replaces them.
+exclude:
+  - AGENTS.md
+  - PROJECT_MEMORY.md
+  - CLAUDE.md
+  - .github/
+  - .vscode/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
